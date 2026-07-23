@@ -95,7 +95,7 @@
             <strong>{{ Auth::guard('siswa')->user()->nama_lengkap }}</strong>
             {{ Auth::guard('siswa')->user()->nomor_pendaftaran }}
         </div>
-        <form method="POST" action="{{ route('siswa.logout') }}" style="margin:0">
+        <form method="POST" action="{{ route('siswa.logout') }}" style="margin:0" id="formLogoutSiswa">
             @csrf
             <button type="submit" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span>Keluar</span></button>
         </form>
@@ -116,5 +116,31 @@
 
 <footer>&copy; {{ date('Y') }} SIPENA — Portal Siswa</footer>
 @stack('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// Konfirmasi logout siswa
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('formLogoutSiswa');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Keluar dari akun?',
+            text: 'Anda akan diarahkan ke halaman login.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Keluar',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            reverseButtons: true
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+});
+</script>
 </body>
 </html>

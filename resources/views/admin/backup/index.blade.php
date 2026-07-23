@@ -27,6 +27,15 @@
 .how-to h4{font-size:.85rem;font-weight:700;color:#166534;margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem;}
 .how-to ol{padding-left:1.25rem;font-size:.8rem;color:#166534;line-height:2;}
 .warning-box{background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:.8rem;color:#92400e;display:flex;gap:.6rem;align-items:flex-start;}
+.jenis-badge{font-size:.65rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;display:inline-flex;align-items:center;gap:.25rem;}
+.jenis-manual{background:#dbeafe;color:#1e40af;}
+.jenis-terjadwal{background:#ede9fe;color:#5b21b6;}
+.search-bar{display:flex;gap:.6rem;flex-wrap:wrap;padding:.9rem 1.1rem;border-bottom:1px solid var(--border);background:#f8fafc;}
+.search-bar input,.search-bar select{border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;font-size:.8rem;flex:1;min-width:160px;}
+.jadwal-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.9rem;align-items:end;}
+.jadwal-form label{display:block;font-size:.75rem;font-weight:700;color:#334155;margin-bottom:.35rem;}
+.jadwal-form select{width:100%;border:1px solid var(--border);border-radius:8px;padding:.55rem .7rem;font-size:.83rem;}
+.jadwal-status{font-size:.72rem;padding:.3rem .65rem;border-radius:8px;background:#f0fdf4;color:#166534;border:1px solid #86efac;display:inline-block;margin-top:.5rem;}
 </style>
 @endpush
 
@@ -44,15 +53,22 @@
     <div class="info-card">
         <div class="info-icon" style="background:#dcfce7;color:#166534"><i class="fas fa-file-archive"></i></div>
         <div>
-            <div class="info-val">{{ count($files) }}</div>
+            <div class="info-val">{{ count($semuaFiles) }}</div>
             <div class="info-lbl">Total File Backup</div>
         </div>
     </div>
     <div class="info-card">
         <div class="info-icon" style="background:#fef3c7;color:#92400e"><i class="fas fa-clock"></i></div>
         <div>
-            <div class="info-val">{{ count($files) > 0 ? \Carbon\Carbon::createFromTimestamp($files[0]['ts'])->diffForHumans() : '-' }}</div>
+            <div class="info-val">{{ count($semuaFiles) > 0 ? \Carbon\Carbon::createFromTimestamp($semuaFiles[0]['ts'])->diffForHumans() : '-' }}</div>
             <div class="info-lbl">Backup Terakhir</div>
+        </div>
+    </div>
+    <div class="info-card">
+        <div class="info-icon" style="background:#ede9fe;color:#5b21b6"><i class="fas fa-calendar-check"></i></div>
+        <div>
+            <div class="info-val" style="font-size:1rem">{{ $pengaturan->jenis === 'nonaktif' ? 'Nonaktif' : ($pengaturan->jenis === 'mingguan' ? 'Mingguan' : 'Bulanan') }}</div>
+            <div class="info-lbl">Backup Otomatis</div>
         </div>
     </div>
 </div>
@@ -97,20 +113,85 @@
     </ol>
 </div>
 
+{{-- Jadwal Backup Otomatis --}}
+<div class="backup-card">
+    <div class="backup-card-head">
+        <h3><i class="fas fa-calendar-alt" style="color:#5b21b6"></i> Jadwal Backup Otomatis</h3>
+    </div>
+    <div style="padding:1.1rem">
+        <p style="font-size:.85rem;color:#64748b;margin-bottom:1rem">
+            Backup akan dibuat otomatis oleh sistem sesuai jadwal di bawah ini (tanpa perlu diklik manual).
+            Saat ini: <strong>{{ $pengaturan->labelJenis() }}</strong>.
+        </p>
+        <form method="POST" action="{{ route('admin.backup.pengaturan') }}" id="formJadwal">
+            @csrf
+            <div class="jadwal-form">
+                <div>
+                    <label for="jenis">Frekuensi</label>
+                    <select name="jenis" id="jenis" onchange="toggleJadwalFields()">
+                        <option value="nonaktif" {{ $pengaturan->jenis === 'nonaktif' ? 'selected' : '' }}>Nonaktif</option>
+                        <option value="mingguan" {{ $pengaturan->jenis === 'mingguan' ? 'selected' : '' }}>Mingguan</option>
+                        <option value="bulanan" {{ $pengaturan->jenis === 'bulanan' ? 'selected' : '' }}>Bulanan</option>
+                    </select>
+                </div>
+                <div id="fieldHari" style="{{ $pengaturan->jenis !== 'mingguan' ? 'display:none' : '' }}">
+                    <label for="hari">Setiap Hari</label>
+                    <select name="hari" id="hari">
+                        @foreach(\App\Services\PengaturanBackup::HARI as $val => $label)
+                        <option value="{{ $val }}" {{ $pengaturan->hari === $val ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div id="fieldTanggal" style="{{ $pengaturan->jenis !== 'bulanan' ? 'display:none' : '' }}">
+                    <label for="tanggal">Setiap Tanggal</label>
+                    <select name="tanggal" id="tanggal">
+                        @for($t = 1; $t <= 28; $t++)
+                        <option value="{{ $t }}" {{ $pengaturan->tanggal === $t ? 'selected' : '' }}>Tanggal {{ $t }}</option>
+                        @endfor
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary" style="width:100%">
+                        <i class="fas fa-save"></i> Simpan Jadwal
+                    </button>
+                </div>
+            </div>
+        </form>
+        <div class="jadwal-status">
+            <i class="fas fa-clock"></i> Dijalankan otomatis setiap hari pukul 01:00
+        </div>
+    </div>
+</div>
+
 {{-- Daftar File Backup --}}
 <div class="backup-card">
     <div class="backup-card-head">
         <h3><i class="fas fa-history" style="color:#1a4a8a"></i> Riwayat Backup</h3>
-        @if(count($files) > 0)
-        <span style="font-size:.75rem;color:#64748b">{{ count($files) }} file tersimpan</span>
-        @endif
+        <span style="font-size:.75rem;color:#64748b">{{ count($files) }} dari {{ count($semuaFiles) }} file</span>
     </div>
+
+    <form method="GET" action="{{ route('admin.backup.index') }}" class="search-bar">
+        <input type="text" name="cari" value="{{ $cari }}" placeholder="Cari nama file / tanggal, mis. 2026-07-23...">
+        <select name="jenis">
+            <option value="">Semua Jenis</option>
+            <option value="manual" {{ $jenis === 'manual' ? 'selected' : '' }}>Manual</option>
+            <option value="terjadwal" {{ $jenis === 'terjadwal' ? 'selected' : '' }}>Terjadwal</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Cari</button>
+        @if($cari || $jenis)
+        <a href="{{ route('admin.backup.index') }}" class="btn btn-outline btn-sm"><i class="fas fa-times"></i> Reset</a>
+        @endif
+    </form>
 
     @if(empty($files))
     <div class="empty-backup">
         <i class="fas fa-database"></i>
+        @if($cari || $jenis)
+        <p>Tidak ada file backup yang cocok dengan pencarian.</p>
+        @else
         <p>Belum ada file backup.</p>
         <p style="margin-top:.35rem;font-size:.78rem">Klik "Buat Backup Sekarang" untuk membuat backup pertama.</p>
+        @endif
     </div>
     @else
     @foreach($files as $file)
@@ -119,6 +200,10 @@
         <div class="file-info">
             <strong>{{ $file['nama'] }}</strong>
             <div class="file-meta">
+                <span class="jenis-badge {{ $file['jenis'] === 'terjadwal' ? 'jenis-terjadwal' : 'jenis-manual' }}">
+                    <i class="fas {{ $file['jenis'] === 'terjadwal' ? 'fa-robot' : 'fa-hand-pointer' }}"></i>
+                    {{ $file['jenis'] === 'terjadwal' ? 'Terjadwal' : 'Manual' }}
+                </span>
                 <span><i class="fas fa-hdd"></i> {{ $file['ukuran'] }}</span>
                 <span><i class="fas fa-calendar"></i> {{ $file['tanggal'] }}</span>
             </div>
@@ -148,6 +233,13 @@
 
 @push('scripts')
 <script>
+// Tampilkan/sembunyikan field hari (mingguan) atau tanggal (bulanan) sesuai pilihan frekuensi
+function toggleJadwalFields() {
+    const jenis = document.getElementById('jenis').value;
+    document.getElementById('fieldHari').style.display = jenis === 'mingguan' ? '' : 'none';
+    document.getElementById('fieldTanggal').style.display = jenis === 'bulanan' ? '' : 'none';
+}
+
 // Popup konfirmasi sebelum backup
 function konfirmasiBackup() {
     Swal.fire({

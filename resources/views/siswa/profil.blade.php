@@ -113,7 +113,6 @@
                         <label class="form-label">Jenis Kelamin</label>
                         <input type="text" value="{{ $siswa->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan' }}"
                             class="form-control readonly-field" readonly>
-                        <div class="form-hint">Tidak dapat diubah.</div>
                     </div>
                 </div>
 

@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
             ['kode_metode_bayar' => 'TF', 'deskripsi_metode_bayar' => 'Transfer Bank'],
             ['kode_metode_bayar' => 'TN', 'deskripsi_metode_bayar' => 'Tunai'],
             ['kode_metode_bayar' => 'VA', 'deskripsi_metode_bayar' => 'Virtual Account'],
-        ]);
+        ]); 
 
         // Jurusan SMK
         Jurusan::insert([

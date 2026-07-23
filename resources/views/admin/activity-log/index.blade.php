@@ -142,11 +142,9 @@
             </tbody>
         </table>
     </div>
-    @if($logs->hasPages())
     <div style="padding:.75rem 1rem;border-top:1px solid var(--border)">
-        {{ $logs->links() }}
+        {{ $logs->onEachSide(1)->links('pagination::bootstrap-5') }}
     </div>
-    @endif
 </div>
 
 {{-- MODAL BERSIHKAN LOG LAMA --}}

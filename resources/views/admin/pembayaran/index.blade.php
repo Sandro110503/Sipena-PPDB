@@ -69,8 +69,8 @@
             </tbody>
         </table>
     </div>
-    @if($pembayaran->hasPages())
-    <div style="padding:.85rem 1.1rem">{{ $pembayaran->links() }}</div>
-    @endif
+    <div style="padding:.75rem 1rem;border-top:1px solid var(--border)">
+        {{ $pembayaran->onEachSide(1)->links('pagination::bootstrap-5') }}
+    </div>
 </div>
 @endsection

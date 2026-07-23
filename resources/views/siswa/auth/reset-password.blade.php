@@ -64,7 +64,7 @@
             <div>Isi <strong>NISN</strong>, <strong>Nomor Pendaftaran</strong>, dan <strong>Tanggal Lahir</strong> yang sesuai dengan data pendaftaran Anda.</div>
         </div>
 
-        <form method="POST" action="{{ route('siswa.reset-password.proses') }}">
+        <form method="POST" action="{{ route('siswa.reset-password.proses') }}" novalidate>
             @csrf
 
             {{-- Verifikasi Identitas --}}
@@ -147,6 +147,110 @@ function togglePw(id, btn) {
     el.type = isHidden ? 'text' : 'password';
     btn.querySelector('i').className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('form');
+
+    const fields = {
+        nisn: document.querySelector('input[name="nisn"]'),
+        nomor_pendaftaran: document.querySelector('input[name="nomor_pendaftaran"]'),
+        tanggal_lahir: document.querySelector('input[name="tanggal_lahir"]'),
+        password_baru: document.getElementById('pw1'),
+        password_baru_confirmation: document.getElementById('pw2'),
+    };
+
+    function showError(input, message) {
+        input.classList.add('is-invalid');
+        let feedback = input.closest('.form-group').querySelector('.js-feedback');
+        if (!feedback) {
+            feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback js-feedback';
+            input.closest('.input-wrap').after(feedback);
+        }
+        feedback.textContent = message;
+    }
+
+    function clearError(input) {
+        input.classList.remove('is-invalid');
+        const feedback = input.closest('.form-group').querySelector('.js-feedback');
+        if (feedback) feedback.remove();
+    }
+
+    function clearAllErrors() {
+        Object.values(fields).forEach(clearError);
+    }
+
+    form.addEventListener('submit', function (e) {
+        clearAllErrors();
+        let valid = true;
+
+        // NISN wajib 10 digit angka
+        const nisnVal = fields.nisn.value.trim();
+        if (nisnVal === '') {
+            showError(fields.nisn, 'NISN wajib diisi.');
+            valid = false;
+        } else if (!/^\d{10}$/.test(nisnVal)) {
+            showError(fields.nisn, 'NISN harus terdiri dari tepat 10 digit angka.');
+            valid = false;
+        }
+
+        // Nomor Pendaftaran wajib diisi
+        if (fields.nomor_pendaftaran.value.trim() === '') {
+            showError(fields.nomor_pendaftaran, 'Nomor pendaftaran wajib diisi.');
+            valid = false;
+        }
+
+        // Tanggal Lahir wajib & masuk akal
+        const tglVal = fields.tanggal_lahir.value;
+        if (tglVal === '') {
+            showError(fields.tanggal_lahir, 'Tanggal lahir wajib diisi.');
+            valid = false;
+        } else {
+            const val = new Date(tglVal);
+            const today = new Date();
+            const maxUsia = new Date();
+            maxUsia.setFullYear(today.getFullYear() - 25);
+
+            if (val >= today) {
+                showError(fields.tanggal_lahir, 'Tanggal lahir tidak boleh melebihi hari ini.');
+                valid = false;
+            } else if (val < maxUsia) {
+                showError(fields.tanggal_lahir, 'Tanggal lahir tidak valid, periksa kembali.');
+                valid = false;
+            }
+        }
+
+        // Password Baru
+        const pw1Val = fields.password_baru.value;
+        if (pw1Val === '') {
+            showError(fields.password_baru, 'Password baru wajib diisi.');
+            valid = false;
+        } else if (pw1Val.length < 8) {
+            showError(fields.password_baru, 'Password baru minimal 8 karakter.');
+            valid = false;
+        } else if (!/[A-Za-z]/.test(pw1Val) || !/\d/.test(pw1Val)) {
+            showError(fields.password_baru, 'Password harus mengandung kombinasi huruf dan angka.');
+            valid = false;
+        }
+
+        // Konfirmasi Password
+        const pw2Val = fields.password_baru_confirmation.value;
+        if (pw2Val === '') {
+            showError(fields.password_baru_confirmation, 'Konfirmasi password baru wajib diisi.');
+            valid = false;
+        } else if (pw2Val !== pw1Val) {
+            showError(fields.password_baru_confirmation, 'Konfirmasi password tidak cocok.');
+            valid = false;
+        }
+
+        if (!valid) {
+            e.preventDefault();
+            // scroll ke error pertama biar terlihat
+            const firstError = form.querySelector('.is-invalid');
+            if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+});
 </script>
 </body>
 </html>

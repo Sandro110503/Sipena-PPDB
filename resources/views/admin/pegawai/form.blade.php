@@ -97,7 +97,7 @@
                             <option value="admin"      {{ old('role',$pegawai?->role)==='admin'?'selected':'' }}>Admin</option>
                             <option value="superadmin" {{ old('role',$pegawai?->role)==='superadmin'?'selected':'' }}>Super Admin</option>
                         </select>
-                        <div class="form-hint">Operator: lihat saja · Admin: kelola data · Super Admin: kelola semua</div>
+                        <div class="form-hint">Admin: kelola data penerimaan dan pembayaran <br> Super Admin: kelola semua data</div>
                         @error('role')<div style="font-size:.72rem;color:#dc2626;margin-top:.2rem">{{ $message }}</div>@enderror
                     </div>
                     @if($pegawai && Auth::guard('admin')->user()->isSuperAdmin() && Auth::guard('admin')->id() !== $pegawai->id)

@@ -13,6 +13,37 @@
     input[type="email"] {
         text-transform: lowercase;
     }
+
+    /* ── Kotak "Petunjuk Pengisian" di setiap card ── */
+    .petunjuk-box {
+        background: #eaf3ff;
+        border: 1px solid #bcd9ff;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+        font-size: .82rem;
+        color: #1e3a5f;
+    }
+    .petunjuk-box .petunjuk-title {
+        font-weight: 800;
+        color: #0f2744;
+        margin-bottom: .5rem;
+        font-size: .85rem;
+    }
+    .petunjuk-box ol {
+        margin: 0;
+        padding-left: 1.25rem;
+    }
+    .petunjuk-box ol li {
+        margin-bottom: .35rem;
+        line-height: 1.55;
+    }
+    .petunjuk-box ol li:last-child {
+        margin-bottom: 0;
+    }
+    .petunjuk-box strong {
+        color: #0f2744;
+    }
 </style>
 @endpush
 
@@ -72,6 +103,17 @@
         <div class="card" style="margin-bottom:1.5rem">
             <div class="card-header"><i class="fas fa-user"></i> Data Pribadi Calon Siswa</div>
             <div class="card-body">
+                <div class="petunjuk-box">
+                    <div class="petunjuk-title">Petunjuk Pengisian:</div>
+                    <ol>
+                        <li>Isi data sesuai dokumen resmi (KTP/KK/Akta Kelahiran/Ijazah), jangan disingkat atau direkayasa.</li>
+                        <li>Perhatikan huruf besar dan kecil pada Tempat Lahir dan Asal Sekolah, sistem akan otomatis mengubahnya menjadi huruf kapital saat disimpan.</li>
+                        <li>NISN diisi 10 digit angka sesuai data Dapodik/Ijazah, tanpa spasi atau tanda baca.</li>
+                        <li>Tahun Lulus diisi tahun kelulusan dari SMP/MTs asal.</li>
+                        <li>Foto bersifat opsional. Jika diunggah, gunakan format JPG/PNG dengan ukuran maksimal 2MB.</li>
+                        <li>Kolom bertanda <strong>*</strong> wajib diisi, kolom lainnya boleh dikosongkan.</li>
+                    </ol>
+                </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Nama Depan <span class="req">*</span></label>
@@ -149,6 +191,15 @@
         <div class="card" style="margin-bottom:1.5rem">
             <div class="card-header"><i class="fas fa-school"></i> Pilihan Jurusan</div>
             <div class="card-body">
+                <div class="petunjuk-box">
+                    <div class="petunjuk-title">Petunjuk Pengisian:</div>
+                    <ol>
+                        <li>Pilih <strong>hanya satu</strong> jurusan yang paling sesuai dengan minat dan kemampuan Anda.</li>
+                        <li>Perhatikan sisa kuota pada setiap jurusan sebelum menentukan pilihan.</li>
+                        <li>Pastikan pilihan sudah benar sebelum formulir dikirim, karena perubahan jurusan setelah pendaftaran harus melalui pihak sekolah.</li>
+                        <li>Kolom bertanda <strong>*</strong> wajib diisi.</li>
+                    </ol>
+                </div>
                 <div class="form-group">
                     <label class="form-label">Jurusan yang Dipilih <span class="req">*</span></label>
                     <select name="pilihan_1" class="form-control @error('pilihan_1') is-invalid @enderror" required>
@@ -181,6 +232,15 @@
         <div class="card" style="margin-bottom:1.5rem">
             <div class="card-header"><i class="fas fa-map-marker-alt"></i> Alamat Tempat Tinggal</div>
             <div class="card-body">
+                <div class="petunjuk-box">
+                    <div class="petunjuk-title">Petunjuk Pengisian:</div>
+                    <ol>
+                        <li>Pilih <strong>"Bersama Orang Tua / Wali"</strong> jika Anda tinggal serumah dengan orang tua/wali, alamat akan otomatis mengikuti data pada bagian "Data Orang Tua / Wali" di bawah.</li>
+                        <li>Pilih <strong>"Kost / Kontrak / Sewa"</strong> jika Anda tinggal terpisah dari orang tua/wali (perantauan), lalu lengkapi alamat tempat tinggal Anda saat ini.</li>
+                        <li>Isi alamat secara lengkap dan sesuai dengan kondisi sebenarnya, karena akan digunakan untuk keperluan surat-menyurat sekolah.</li>
+                        <li>Kolom bertanda <strong>*</strong> wajib diisi sesuai opsi yang dipilih.</li>
+                    </ol>
+                </div>
 
                 {{-- Toggle pilihan utama --}}
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem">
@@ -265,6 +325,15 @@
         <div class="card" style="margin-bottom:1.5rem">
             <div class="card-header"><i class="fas fa-user-friends"></i> Data Orang Tua / Wali</div>
             <div class="card-body">
+                <div class="petunjuk-box">
+                    <div class="petunjuk-title">Petunjuk Pengisian:</div>
+                    <ol>
+                        <li>Isi data orang tua/wali yang aktif dan dapat dihubungi sewaktu-waktu.</li>
+                        <li>Nomor HP wajib aktif karena akan digunakan sekolah untuk menyampaikan informasi penting terkait pendaftaran.</li>
+                        <li>Alamat orang tua/wali wajib diisi lengkap, karena dapat digunakan sebagai alamat siswa apabila tinggal bersama orang tua/wali.</li>
+                        <li>Kolom bertanda <strong>*</strong> wajib diisi, kolom lainnya boleh dikosongkan.</li>
+                    </ol>
+                </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Hubungan <span class="req">*</span></label>
@@ -365,6 +434,16 @@
         <div class="card" style="margin-bottom:1.5rem">
             <div class="card-header"><i class="fas fa-lock"></i> Akun & Kontak</div>
             <div class="card-body">
+                <div class="petunjuk-box">
+                    <div class="petunjuk-title">Petunjuk Pengisian:</div>
+                    <ol>
+                        <li>Gunakan email yang <strong>masih aktif</strong>, karena akan digunakan untuk login ke Portal Siswa dan menerima notifikasi status pendaftaran.</li>
+                        <li>Password minimal 8 karakter, kombinasikan huruf dan angka agar lebih aman dan mudah diingat.</li>
+                        <li>Pastikan Konfirmasi Password diisi sama persis dengan Password.</li>
+                        <li>Nomor HP diisi dengan nomor yang dapat dihubungi sebagai kontak tambahan.</li>
+                        <li>Kolom bertanda <strong>*</strong> wajib diisi.</li>
+                    </ol>
+                </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Email <span class="req">*</span></label>

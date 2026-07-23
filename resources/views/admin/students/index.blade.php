@@ -39,6 +39,17 @@
                         @endforeach
                     </select>
                 </div>
+                <div style="min-width:180px">
+                    <label class="form-label">Bulan Daftar</label>
+                    <select name="bulan" class="form-control">
+                        <option value="">Semua Bulan</option>
+                        @foreach($bulanOptions as $ym)
+                        <option value="{{ $ym }}" {{ request('bulan')===$ym?'selected':'' }}>
+                            {{ \Carbon\Carbon::createFromFormat('Y-m', $ym)->translatedFormat('F Y') }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Cari</button>
                 <a href="{{ route('admin.siswa.index') }}" class="btn btn-outline"><i class="fas fa-times"></i> Reset</a>
             </div>

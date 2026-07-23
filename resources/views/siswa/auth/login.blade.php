@@ -347,7 +347,6 @@
         <div class="card">
 
             <h2>Login Siswa</h2>
-            <p>Gunakan nomor pendaftaran atau NISN beserta password yang dibuat saat mendaftar.</p>
 
             @if(session('error'))
                 <div class="err">
@@ -369,7 +368,7 @@
 
             <div class="info">
                 <i class="fas fa-info-circle"></i>
-                <strong>Password</strong> adalah password yang Anda buat saat mengisi formulir pendaftaran.
+                Gunakan nomor pendaftaran atau NISN beserta password yang dibuat saat mendaftar.
             </div>
 
             <form method="POST" action="{{ route('siswa.login.post') }}" novalidate>
@@ -407,7 +406,7 @@
 
                 <button type="submit" class="btn">
                     <i class="fas fa-sign-in-alt"></i>
-                    Masuk ke Portal
+                    Login
                 </button>
             </form>
 

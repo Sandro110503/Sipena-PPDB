@@ -53,6 +53,54 @@ class CalonSiswaSeeder extends Seeder
             ]
         );
 
+        DB::table('ref_tipe_relasi')->updateOrInsert(
+            ['kode_tipe_relasi' => 'IB'],
+            [
+                'deskripsi_tipe_relasi' => 'Ibu',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]
+        );
+
+        // ── Referensi metode pembayaran ───────────────────────────────────
+        // Cek dulu isi tabelnya — kalau project ini sudah punya seeder
+        // metode pembayaran sendiri (mis. QRIS, TF, TN), JANGAN tambah kode
+        // baru lagi supaya tidak dobel/duplikat secara makna. Kode baru
+        // hanya di-seed kalau tabelnya benar-benar masih kosong.
+        $daftarMetodeBayar = DB::table('metode_pembayaran')->pluck('kode_metode_bayar')->all();
+
+        if (empty($daftarMetodeBayar)) {
+            $metodeBayarRef = [
+                'TF'    => 'Transfer Bank',
+                'TN'    => 'Tunai',
+                'QRIS'  => 'QRIS',
+                'VA'    => 'Virtual Account',
+            ];
+
+            foreach ($metodeBayarRef as $kode => $deskripsi) {
+                DB::table('metode_pembayaran')->updateOrInsert(
+                    ['kode_metode_bayar' => $kode],
+                    [
+                        'deskripsi_metode_bayar' => $deskripsi,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+            }
+
+            $daftarMetodeBayar = array_keys($metodeBayarRef);
+        } else {
+            $this->command->info('Memakai metode_pembayaran yang sudah ada: ' . implode(', ', $daftarMetodeBayar));
+        }
+
+        // ── Daftar admin untuk verifikator pembayaran (opsional) ──────────
+        // Kalau tabel admins masih kosong, id_admin di pembayaran akan
+        // dibiarkan null (kolomnya memang nullable).
+        $daftarAdmin = DB::table('admins')->pluck('id_admin');
+        if ($daftarAdmin->isEmpty()) {
+            $this->command->warn('Tabel admins masih kosong — id_admin pada pembayaran akan diisi null. Jalankan AdminSeeder dulu kalau ingin verifikatornya terisi.');
+        }
+
         $jurusan = DB::table('jurusan')->get();
 
         if ($jurusan->isEmpty()) {
@@ -60,26 +108,23 @@ class CalonSiswaSeeder extends Seeder
             return;
         }
 
-        $provinsi = [
-            'DKI Jakarta',
-            'Jawa Barat',
-            'Jawa Tengah',
-            'Jawa Timur',
-            'Banten'
+        // ── Mapping kota -> provinsi ──────────────────────────────────────
+        // Dibuat berpasangan (bukan array terpisah) supaya kota & provinsi
+        // ortu selalu konsisten secara geografis, dan supaya logika
+        // "ortu di Bekasi / di luar Bekasi & Jabar" bisa dievaluasi dengan benar.
+        $kotaProvinsiMap = [
+            'Jakarta Timur'    => 'DKI Jakarta',
+            'Jakarta Selatan'  => 'DKI Jakarta',
+            'Bekasi'           => 'Jawa Barat',
+            'Bogor'            => 'Jawa Barat',
+            'Depok'            => 'Jawa Barat',
+            'Bandung'          => 'Jawa Barat',
+            'Tangerang'        => 'Banten',
+            'Semarang'         => 'Jawa Tengah',
+            'Surabaya'         => 'Jawa Timur',
+            'Malang'           => 'Jawa Timur',
         ];
-
-        $kota = [
-            'Jakarta Timur',
-            'Jakarta Selatan',
-            'Bekasi',
-            'Bogor',
-            'Depok',
-            'Bandung',
-            'Tangerang',
-            'Semarang',
-            'Surabaya',
-            'Malang'
-        ];
+        $daftarKota = array_keys($kotaProvinsiMap);
 
         $pekerjaan = [
             'PNS',
@@ -110,12 +155,41 @@ class CalonSiswaSeeder extends Seeder
             'Anisa', 'Bunga', 'Diana', 'Farah', 'Gina', 'Ika',
         ];
 
-        $namaBelakang = [
-            'Saragih', 'Waskita', 'Siregar', 'Usada', 'Kuswoyo', 'Simatupang',
-            'Nugroho', 'Wibowo', 'Santoso', 'Kusuma', 'Pratama', 'Setiawan',
-            'Hutagalung', 'Purnama', 'Wijaya', 'Halim', 'Gunawan', 'Suryanto',
-            'Kurniawan', 'Sinaga', 'Panjaitan', 'Hidayat', 'Ramadhan', 'Firmansyah',
+        // Nama belakang netral: aman dipakai untuk pria maupun wanita.
+        // Nama marga Batak (Siregar, Simatupang, Hutagalung, Sinaga, Panjaitan,
+        // Saragih) diwariskan dari garis ayah dan bentuknya tidak berubah
+        // untuk anak laki-laki maupun perempuan, jadi masuk kelompok ini.
+        $namaBelakangNetral = [
+            'Saragih', 'Waskita', 'Siregar', 'Usada', 'Simatupang',
+            'Nugroho', 'Santoso', 'Kusuma', 'Pratama',
+            'Hutagalung', 'Purnama', 'Wijaya', 'Halim',
+            'Sinaga', 'Panjaitan', 'Hidayat', 'Ramadhan',
         ];
+
+        // Nama belakang khusus pria: berakhiran "-wan"/"-anto"/"-syah" dsb,
+        // yang dalam konvensi nama Jawa terasa maskulin (mis. "wan" = pria,
+        // seperti pada "wartawan", "budayawan"), jadi hanya dipakai untuk
+        // jenis_kelamin laki-laki.
+        $namaBelakangPria = [
+            'Kuswoyo', 'Wibowo', 'Setiawan', 'Gunawan', 'Suryanto',
+            'Kurniawan', 'Firmansyah',
+        ];
+
+        // Helper untuk memilih nama belakang sesuai gender:
+        // pria bisa dapat nama netral atau nama khusus pria,
+        // wanita hanya dari kelompok netral.
+        $pilihNamaBelakang = function (string $jenisKelamin) use ($faker, $namaBelakangNetral, $namaBelakangPria): string {
+            $pool = $jenisKelamin === 'L'
+                ? array_merge($namaBelakangNetral, $namaBelakangPria)
+                : $namaBelakangNetral;
+
+            return $faker->randomElement($pool);
+        };
+
+        // Helper kecil untuk menyeragamkan format email dari sebuah nama.
+        $buatSlugEmail = function (string $nama): string {
+            return strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $nama));
+        };
 
         for ($i = 1; $i <= 60; $i++) {
 
@@ -143,6 +217,10 @@ class CalonSiswaSeeder extends Seeder
             // ALAMAT ORANG TUA
             // ==========================
 
+            // Kota & provinsi ortu diambil dari mapping yang sama supaya konsisten.
+            $kotaOrtu     = $faker->randomElement($daftarKota);
+            $provinsiOrtu = $kotaProvinsiMap[$kotaOrtu];
+
             $idAlamatOrtu = DB::table('alamat')->insertGetId([
                 'id_pemilik'           => null,
                 'jenis_tempat_tinggal' => 'Rumah Orang Tua/Wali',
@@ -151,8 +229,8 @@ class CalonSiswaSeeder extends Seeder
                 'kelurahan'            => ucfirst($faker->word()),
                 'kecamatan'            => ucfirst($faker->word()),
                 'kode_pos'             => $faker->postcode(),
-                'kabupaten_kota'       => $faker->randomElement($kota),
-                'provinsi'             => $faker->randomElement($provinsi),
+                'kabupaten_kota'       => $kotaOrtu,
+                'provinsi'             => $provinsiOrtu,
                 'keterangan_lainnya'   => null,
                 'created_at'           => now(),
                 'updated_at'           => now(),
@@ -161,15 +239,24 @@ class CalonSiswaSeeder extends Seeder
             // ==========================
             // STATUS TEMPAT TINGGAL
             // ==========================
+            // Aturan:
+            // - Jika ortu berada di kota Bekasi -> siswa tinggal bersama ortu
+            //   (tidak perlu sewa/kost lagi, karena sudah dekat sekolah).
+            // - Jika ortu di luar kota Bekasi ATAU di luar provinsi Jawa Barat
+            //   -> siswa wajib sewa/kost, dan lokasi kost-nya di kota Bekasi
+            //   (dekat SMK Yadika 8 Jatimulya).
 
-            $tinggalBersamaOrtu = $faker->boolean(70);
+            $ortuDiBekasi = ($kotaOrtu === 'Bekasi');
 
-            if ($tinggalBersamaOrtu) {
+            if ($ortuDiBekasi) {
 
-                $idAlamatSiswa = $idAlamatOrtu;
-                $kodeJenisAlamat = 'RP';
+                $tinggalBersamaOrtu = true;
+                $idAlamatSiswa      = $idAlamatOrtu;
+                $kodeJenisAlamat    = 'RP';
 
             } else {
+
+                $tinggalBersamaOrtu = false;
 
                 $idAlamatSiswa = DB::table('alamat')->insertGetId([
                     'id_pemilik'           => null,
@@ -179,9 +266,9 @@ class CalonSiswaSeeder extends Seeder
                     'kelurahan'            => ucfirst($faker->word()),
                     'kecamatan'            => ucfirst($faker->word()),
                     'kode_pos'             => $faker->postcode(),
-                    'kabupaten_kota'       => $faker->randomElement($kota),
-                    'provinsi'             => $faker->randomElement($provinsi),
-                    'keterangan_lainnya'   => 'Tempat tinggal siswa',
+                    'kabupaten_kota'       => 'Bekasi',
+                    'provinsi'             => 'Jawa Barat',
+                    'keterangan_lainnya'   => 'Tempat tinggal siswa (kost/sewa dekat sekolah)',
                     'created_at'           => now(),
                     'updated_at'           => now(),
                 ]);
@@ -199,6 +286,10 @@ class CalonSiswaSeeder extends Seeder
             $namaDepan  = $jenisKelamin === 'L' ? $faker->randomElement($namaLaki) : $faker->randomElement($namaPerempuan);
             $namaTengah = $jenisKelamin === 'L' ? $faker->randomElement($namaLaki) : $faker->randomElement($namaPerempuan);
 
+            // Email pakai nama depan siswa + index (index menjaga keunikan
+            // walau nama depan sama, karena daftar nama manual terbatas).
+            $emailSiswa = $buatSlugEmail($namaDepan) . $i . '@gmail.com';
+
             $idSiswa = DB::table('calon_siswa')->insertGetId([
                 'id_periode'        => $periodeTerpilih->id_periode,
 
@@ -206,9 +297,9 @@ class CalonSiswaSeeder extends Seeder
                 'jenis_kelamin'     => $jenisKelamin,
                 'nama_depan'        => strtoupper($namaDepan),
                 'nama_tengah'       => strtoupper($namaTengah),
-                'nama_belakang'     => strtoupper($faker->randomElement($namaBelakang)),
+                'nama_belakang'     => strtoupper($pilihNamaBelakang($jenisKelamin)),
                 'nomor_hp'          => '08' . $faker->numerify('##########'),
-                'email'             => "siswa{$i}_" . time() . "@gmail.com",
+                'email'             => $emailSiswa,
                 'tanggal_lahir'     => $faker->dateTimeBetween('-17 years', '-15 years')->format('Y-m-d'),
                 'tempat_lahir'      => strtoupper($faker->city()),
                 'nisn' => (string) $faker->unique()->numberBetween(1000000000, 9999999999),
@@ -242,15 +333,29 @@ class CalonSiswaSeeder extends Seeder
             // ==========================
             // WALI
             // ==========================
+            // Wali diacak 50:50 antara Ayah dan Ibu (bukan hardcode Ayah
+            // terus), supaya kode 'IB' pada ref_tipe_relasi juga terpakai.
+
+            $waliAdalahAyah = $faker->boolean(50);
+
+            $jenisKelaminWali = $waliAdalahAyah ? 'L' : 'P';
+            $kodeRelasiWali   = $waliAdalahAyah ? 'AY' : 'IB';
+            $namaDepanWali    = $waliAdalahAyah
+                ? $faker->randomElement($namaLaki)
+                : $faker->randomElement($namaPerempuan);
+
+            // Email pakai nama depan wali + index, supaya konsisten dengan
+            // aturan email siswa dan tetap unik antar baris data.
+            $emailWali = $buatSlugEmail($namaDepanWali) . $i . '@gmail.com';
 
             $idWali = DB::table('wali_orang_tua')->insertGetId([
                 'id_alamat'          => $idAlamatOrtu,
-                'jenis_kelamin'      => 'L',
-                'nama_depan'         => strtoupper($faker->randomElement($namaLaki)),
-                'nama_belakang'      => strtoupper($faker->randomElement($namaBelakang)),
-                'hubungan'           => 'AY',
+                'jenis_kelamin'      => $jenisKelaminWali,
+                'nama_depan'         => strtoupper($namaDepanWali),
+                'nama_belakang'      => strtoupper($pilihNamaBelakang($jenisKelaminWali)),
+                'hubungan'           => $kodeRelasiWali,
                 'nomor_hp'           => '08' . $faker->numerify('##########'),
-                'email'              => "ayah{$i}@gmail.com",
+                'email'              => $emailWali,
                 'pekerjaan'          => $faker->randomElement($pekerjaan),
                 'keterangan_lainnya' => null,
                 'created_at'         => now(),
@@ -260,7 +365,7 @@ class CalonSiswaSeeder extends Seeder
             DB::table('relasi_siswa')->insert([
                 'id_siswa'         => $idSiswa,
                 'id_wali'          => $idWali,
-                'kode_tipe_relasi' => 'AY',
+                'kode_tipe_relasi' => $kodeRelasiWali,
                 'created_at'       => now(),
                 'updated_at'       => now(),
             ]);
@@ -275,6 +380,69 @@ class CalonSiswaSeeder extends Seeder
                 'created_at'           => now(),
                 'updated_at'           => now(),
             ]);
+
+            // ==========================
+            // PEMBAYARAN
+            // ==========================
+            // Tidak semua siswa langsung bayar. Sekitar 70% sudah melakukan
+            // pembayaran; sisanya dianggap belum bayar (tetap 'Menunggu',
+            // tanpa baris di pembayaran_siswa).
+            // Dari yang sudah bayar, statusnya dibagi:
+            //   65% Terverifikasi, 20% Menunggu Verifikasi, 15% Ditolak.
+
+            $sudahBayar = $faker->boolean(70);
+
+            if ($sudahBayar) {
+
+                $rollStatus = $faker->numberBetween(1, 100);
+
+                if ($rollStatus <= 65) {
+                    $statusPembayaran = 'Terverifikasi';
+                } elseif ($rollStatus <= 85) {
+                    $statusPembayaran = 'Menunggu Verifikasi';
+                } else {
+                    $statusPembayaran = 'Ditolak';
+                }
+
+                // Tanggal bayar harus setelah tanggal daftar, tapi tidak
+                // melebihi hari ini ataupun batas tutup periode.
+                $batasAtasBayar = min($periodeTerpilih->tanggal_tutup, now()->format('Y-m-d'));
+                $tanggalBayar   = $faker->dateTimeBetween($tanggalDaftar, $batasAtasBayar);
+
+                // Verifikator hanya terisi kalau statusnya sudah diproses
+                // admin (Terverifikasi/Ditolak); kalau masih menunggu, belum
+                // ada admin yang menyentuhnya.
+                $idAdminVerifikator = null;
+                if ($statusPembayaran !== 'Menunggu Verifikasi' && $daftarAdmin->isNotEmpty()) {
+                    $idAdminVerifikator = $daftarAdmin->random();
+                }
+
+                DB::table('pembayaran_siswa')->insert([
+                    'kode_metode_bayar' => $faker->randomElement($daftarMetodeBayar),
+                    'id_siswa'          => $idSiswa,
+                    'id_admin'          => $idAdminVerifikator,
+                    'jumlah_bayar'      => $periodeTerpilih->biaya_pendaftaran,
+                    'tanggal_bayar'     => $tanggalBayar,
+                    'keterangan'        => null,
+                    'status_pembayaran' => $statusPembayaran,
+                    'bukti_bayar'       => 'bukti-pembayaran/bukti-pembayaran-dummy.jpg',
+                    'created_at'        => now(),
+                    'updated_at'        => now(),
+                ]);
+
+                // Pembayaran terverifikasi otomatis meluluskan status
+                // penerimaan siswa, konsisten dengan alur verifikasi
+                // otomatis pada sistem SIPENA.
+                if ($statusPembayaran === 'Terverifikasi') {
+                    DB::table('calon_siswa')
+                        ->where('id_siswa', $idSiswa)
+                        ->update([
+                            'status_penerimaan' => 'Diterima',
+                            'tanggal_diterima'  => $tanggalBayar,
+                            'updated_at'        => now(),
+                        ]);
+                }
+            }
 
             $this->command->info("Data {$i}/60 berhasil dibuat (Periode: {$periodeTerpilih->nama_periode})");
         }

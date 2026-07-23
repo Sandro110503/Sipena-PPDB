@@ -201,6 +201,7 @@ Route::middleware('web')->group(function () {
             Route::prefix('backup')->name('backup.')->group(function () {
                 Route::get('/',                    [BackupController::class, 'index'])->name('index');
                 Route::post('/proses',             [BackupController::class, 'backup'])->name('proses');
+                Route::post('/pengaturan',         [BackupController::class, 'simpanPengaturan'])->name('pengaturan');
                 Route::get('/download/{filename}', [BackupController::class, 'download'])->name('download');
                 Route::delete('/hapus/{filename}', [BackupController::class, 'hapus'])->name('hapus');
             });

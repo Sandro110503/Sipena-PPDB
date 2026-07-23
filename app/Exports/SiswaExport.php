@@ -18,11 +18,19 @@ class SiswaExport implements FromCollection, WithHeadings, WithMapping, WithStyl
 {
     protected ?string $status;
     protected ?int $jurusanId;
+    protected ?int $periodeId;
+    protected ?string $bulan; // format 'YYYY-MM'
 
-    public function __construct(?string $status = null, ?int $jurusanId = null)
-    {
+    public function __construct(
+        ?string $status = null,
+        ?int $jurusanId = null,
+        ?int $periodeId = null,
+        ?string $bulan = null
+    ) {
         $this->status    = $status;
         $this->jurusanId = $jurusanId;
+        $this->periodeId = $periodeId;
+        $this->bulan     = $bulan;
     }
 
     public function collection()
@@ -37,6 +45,10 @@ class SiswaExport implements FromCollection, WithHeadings, WithMapping, WithStyl
                 $q->whereHas('pendaftaranJurusan', fn($qj) =>
                     $qj->where('id_jurusan', $this->jurusanId)->where('urutan_pilihan', 1)
                 )
+            )
+            ->when($this->periodeId, fn($q) => $q->where('id_periode', $this->periodeId))
+            ->when($this->bulan, fn($q) =>
+                $q->whereRaw("DATE_FORMAT(tanggal_daftar, '%Y-%m') = ?", [$this->bulan])
             )
             ->get();
     }
@@ -109,6 +121,10 @@ class SiswaExport implements FromCollection, WithHeadings, WithMapping, WithStyl
 
     public function title(): string
     {
+        if ($this->bulan) {
+            return 'Siswa ' . \Carbon\Carbon::createFromFormat('Y-m', $this->bulan)->translatedFormat('F Y');
+        }
+
         return 'Data Siswa PPDB';
     }
 }

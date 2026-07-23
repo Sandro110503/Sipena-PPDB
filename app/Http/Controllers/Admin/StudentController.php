@@ -29,13 +29,15 @@ class StudentController extends Controller
             'status'  => ['nullable', 'in:' . implode(',', $this->validStatus)],
             'jurusan' => ['nullable', 'integer', 'exists:jurusan,id_jurusan'],
             'periode' => ['nullable', 'integer', 'exists:periode_ppdb,id_periode'],
+            'bulan'   => ['nullable', 'date_format:Y-m'],
         ], [
-            'search.max'      => 'Kata kunci pencarian maksimal 100 karakter.',
-            'status.in'       => 'Status filter tidak valid.',
-            'jurusan.integer' => 'Jurusan tidak valid.',
-            'jurusan.exists'  => 'Jurusan yang dipilih tidak ditemukan.',
-            'periode.integer' => 'Periode tidak valid.',
-            'periode.exists'  => 'Periode yang dipilih tidak ditemukan.',
+            'search.max'        => 'Kata kunci pencarian maksimal 100 karakter.',
+            'status.in'         => 'Status filter tidak valid.',
+            'jurusan.integer'   => 'Jurusan tidak valid.',
+            'jurusan.exists'    => 'Jurusan yang dipilih tidak ditemukan.',
+            'periode.integer'   => 'Periode tidak valid.',
+            'periode.exists'    => 'Periode yang dipilih tidak ditemukan.',
+            'bulan.date_format' => 'Format bulan tidak valid.',
         ]);
 
         $query = CalonSiswa::with([
@@ -62,13 +64,23 @@ class StudentController extends Controller
             ->when($request->periode, fn($q) =>
                 $q->where('id_periode', $request->periode)
             )
+            ->when($request->bulan, fn($q) =>
+                $q->whereRaw("DATE_FORMAT(tanggal_daftar, '%Y-%m') = ?", [$request->bulan])
+            )
             ->latest();
 
         $siswa   = $query->paginate(15)->withQueryString();
         $jurusan = Jurusan::all();
         $periode = PeriodePpdb::orderByDesc('tanggal_buka')->get();
 
-        return view('admin.students.index', compact('siswa', 'jurusan', 'periode'));
+        // Daftar bulan-tahun yang benar-benar ada datanya, untuk isi dropdown filter.
+        $bulanOptions = CalonSiswa::whereNotNull('tanggal_daftar')
+            ->selectRaw("DATE_FORMAT(tanggal_daftar, '%Y-%m') as ym")
+            ->distinct()
+            ->orderByDesc('ym')
+            ->pluck('ym');
+
+        return view('admin.students.index', compact('siswa', 'jurusan', 'periode', 'bulanOptions'));
     }
 
     // -------------------------------------------------------------------------
@@ -150,12 +162,17 @@ class StudentController extends Controller
         $request->validate([
             'status'  => ['nullable', 'in:' . implode(',', $this->validStatus)],
             'jurusan' => ['nullable', 'integer', 'exists:jurusan,id_jurusan'],
+            'periode' => ['nullable', 'integer', 'exists:periode_ppdb,id_periode'],
+            'bulan'   => ['nullable', 'date_format:Y-m'],
         ], [
-            'status.in'      => 'Filter status tidak valid.',
-            'jurusan.exists' => 'Jurusan yang dipilih tidak ditemukan.',
+            'status.in'         => 'Filter status tidak valid.',
+            'jurusan.exists'    => 'Jurusan yang dipilih tidak ditemukan.',
+            'periode.exists'    => 'Periode yang dipilih tidak ditemukan.',
+            'bulan.date_format' => 'Format bulan tidak valid.',
         ]);
 
         $siswa = CalonSiswa::with([
+                'periode',
                 'pendaftaranJurusan.jurusan',
                 'alamatCalonSiswa.alamat',
                 'relasiSiswa.wali.alamat',
@@ -167,6 +184,10 @@ class StudentController extends Controller
                        ->where('urutan_pilihan', 1)
                 )
             )
+            ->when($request->periode, fn($q) => $q->where('id_periode', $request->periode))
+            ->when($request->bulan, fn($q) =>
+                $q->whereRaw("DATE_FORMAT(tanggal_daftar, '%Y-%m') = ?", [$request->bulan])
+            )
             ->get();
 
         if ($siswa->isEmpty()) {
@@ -174,11 +195,17 @@ class StudentController extends Controller
         }
 
         $jurusanFilter = $request->jurusan ? Jurusan::find($request->jurusan) : null;
+        $periodeFilter = $request->periode ? PeriodePpdb::find($request->periode) : null;
 
-        $pdf = Pdf::loadView('admin.students.pdf', compact('siswa', 'jurusanFilter'))
+        $pdf = Pdf::loadView('admin.students.pdf', compact('siswa', 'jurusanFilter', 'periodeFilter'))
             ->setPaper('a4', 'landscape');
 
-        return $pdf->download('data-siswa-ppdb-' . date('Ymd') . '.pdf');
+        $namaFile = 'data-siswa-ppdb'
+            . ($request->bulan ? '-' . $request->bulan : '')
+            . ($request->periode ? '-periode' . $request->periode : '')
+            . '-' . date('Ymd') . '.pdf';
+
+        return $pdf->download($namaFile);
     }
 
     // -------------------------------------------------------------------------
@@ -190,9 +217,13 @@ class StudentController extends Controller
         $request->validate([
             'status'  => ['nullable', 'in:' . implode(',', $this->validStatus)],
             'jurusan' => ['nullable', 'integer', 'exists:jurusan,id_jurusan'],
+            'periode' => ['nullable', 'integer', 'exists:periode_ppdb,id_periode'],
+            'bulan'   => ['nullable', 'date_format:Y-m'],
         ], [
-            'status.in'      => 'Filter status tidak valid.',
-            'jurusan.exists' => 'Jurusan yang dipilih tidak ditemukan.',
+            'status.in'        => 'Filter status tidak valid.',
+            'jurusan.exists'   => 'Jurusan yang dipilih tidak ditemukan.',
+            'periode.exists'   => 'Periode yang dipilih tidak ditemukan.',
+            'bulan.date_format'=> 'Format bulan tidak valid.',
         ]);
 
         $count = CalonSiswa::when($request->status, fn($q) => $q->where('status_penerimaan', $request->status))
@@ -202,15 +233,24 @@ class StudentController extends Controller
                        ->where('urutan_pilihan', 1)
                 )
             )
+            ->when($request->periode, fn($q) => $q->where('id_periode', $request->periode))
+            ->when($request->bulan, fn($q) =>
+                $q->whereRaw("DATE_FORMAT(tanggal_daftar, '%Y-%m') = ?", [$request->bulan])
+            )
             ->count();
 
         if ($count === 0) {
             return back()->with('error', 'Tidak ada data siswa yang sesuai filter untuk diekspor.');
         }
 
+        $namaFile = 'data-siswa-ppdb'
+            . ($request->bulan ? '-' . $request->bulan : '')
+            . ($request->periode ? '-periode' . $request->periode : '')
+            . '-' . date('Ymd') . '.xlsx';
+
         return Excel::download(
-            new SiswaExport($request->status, $request->jurusan),
-            'data-siswa-ppdb-' . date('Ymd') . '.xlsx'
+            new SiswaExport($request->status, $request->jurusan, $request->periode, $request->bulan),
+            $namaFile
         );
     }
 

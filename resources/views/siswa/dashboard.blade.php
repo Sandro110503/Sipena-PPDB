@@ -62,7 +62,7 @@
         <strong>{{ $cfg['title'] }}</strong>
         <span>
             @if($siswa->status_penerimaan === 'Menunggu')
-                Pendaftaran Anda sedang diverifikasi oleh panitia PPDB.
+                Pendaftaran Anda sedang diverifikasi.
             @elseif($siswa->status_penerimaan === 'Diterima')
                 {{ $siswa->tanggal_diterima ? 'Diterima pada '.$siswa->tanggal_diterima->format('d M Y') : 'Silakan lanjutkan proses pembayaran.' }}
             @elseif($siswa->status_penerimaan === 'Ditolak')
@@ -105,7 +105,7 @@
         <div style="font-size:.75rem;color:#92400e;opacity:.85;margin-top:.15rem">
             Bukti pembayaran Rp {{ number_format($pembayaranMenunggu->jumlah_bayar,0,',','.') }}
             sudah diunggah pada {{ $pembayaranMenunggu->created_at->format('d M Y, H:i') }}.
-            Harap tunggu konfirmasi panitia.
+            Harap tunggu konfirmasi administrasi.
         </div>
     </div>
     <a href="{{ route('siswa.pembayaran') }}"

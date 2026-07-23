@@ -314,7 +314,7 @@ RIGHT
     <div class="right">
 
         <div class="login-box">
-
+            <h2>Login Admin</h2>
             <div class="nip-badge">
                 <i class="fas fa-id-badge"></i>
                 Login menggunakan NIP dan Password
@@ -383,7 +383,7 @@ RIGHT
 
                 <button class="btn">
                     <i class="fas fa-sign-in-alt"></i>
-                    Masuk ke Dashboard
+                    Login
                 </button>
 
             </form>

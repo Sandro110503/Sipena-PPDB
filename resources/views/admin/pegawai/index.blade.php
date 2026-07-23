@@ -29,7 +29,6 @@
                         <option value="">Semua Role</option>
                         <option value="superadmin" {{ request('role')==='superadmin'?'selected':'' }}>Super Admin</option>
                         <option value="admin"      {{ request('role')==='admin'?'selected':'' }}>Admin</option>
-                        <option value="operator"   {{ request('role')==='operator'?'selected':'' }}>Operator</option>
                     </select>
                 </div>
                 <div style="min-width:130px">

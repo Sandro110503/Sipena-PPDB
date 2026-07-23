@@ -23,19 +23,51 @@
         /* ====== SIDEBAR ====== */
         .sidebar{width:var(--sidebar-w);background:var(--navy);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:300;transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:4px 0 20px rgba(0,0,0,.15);}
         .sidebar-brand{padding:1rem 1.1rem .9rem;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;}
-        .sidebar-brand-logo{display:flex;align-items:center;gap:.6rem;}
-        .sidebar-brand-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:grid;place-items:center;color:var(--navy);font-size:.95rem;font-weight:900;flex-shrink:0;}
+        .sidebar-brand-logo{
+            display:flex;
+            align-items:center;
+            gap:.75rem;
+        }
+
+        .sidebar-brand-icon{
+            width:52px;
+            height:52px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            flex-shrink:0;
+        }
+
+        .sidebar-brand-icon img{
+            width:100%;
+            height:100%;
+            object-fit:contain;
+        }
+
+        .sidebar-brand h2{
+            font-size:1.15rem;
+            font-weight:800;
+            color:#fff;
+            line-height:1.1;
+            margin:0;
+        }
+
+        .sidebar-brand p{
+            font-size:.72rem;
+            color:rgba(255,255,255,.6);
+            margin-top:2px;
+        }
         .sidebar-brand h2{font-size:1rem;font-weight:800;color:var(--accent);}
         .sidebar-brand p{font-size:.62rem;color:rgba(255,255,255,.4);margin-top:1px;}
         .sidebar-close{display:none;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.5);font-size:1.1rem;padding:.25rem;border-radius:6px;}
         .sidebar-close:hover{color:#fff;background:rgba(255,255,255,.08);}
-        .sidebar-nav{flex:1;padding:.65rem 0;overflow-y:auto;}
-        .sidebar-nav::-webkit-scrollbar{width:3px;}
-        .sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px;}
-        .nav-label{font-size:.6rem;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.28);padding:.6rem 1.1rem .2rem;text-transform:uppercase;}
-        .nav-item a{display:flex;align-items:center;gap:.65rem;padding:.58rem 1.1rem;color:rgba(255,255,255,.65);text-decoration:none;font-size:.83rem;font-weight:500;transition:.18s;border-left:3px solid transparent;}
-        .nav-item a:hover,.nav-item a.active{background:rgba(255,255,255,.07);color:#fff;border-left-color:var(--accent);}
-        .nav-item a i{width:16px;text-align:center;font-size:.83rem;flex-shrink:0;}
+        .sidebar-nav{flex:1;padding:.65rem 0;overflow-y:auto;position:relative;}
+        .sidebar-nav::-webkit-scrollbar{width:5px;}
+        .sidebar-nav::-webkit-scrollbar-track{background:transparent;}
+        .sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px;}
+        .sidebar-nav::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.32);}
+        .nav-label{font-size:.6rem;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.28);padding:.5rem 1.1rem .15rem;text-transform:uppercase;}
+        .nav-item a{display:flex;align-items:center;gap:.65rem;padding:.5rem 1.1rem;color:rgba(255,255,255,.65);text-decoration:none;font-size:.82rem;font-weight:500;transition:.18s;border-left:3px solid transparent;}
         .sidebar-footer{padding:.85rem 1.1rem;border-top:1px solid rgba(255,255,255,.08);}
         .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:299;opacity:0;transition:opacity .3s;}
 
@@ -156,13 +188,19 @@
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <div class="sidebar-brand-logo">
-            <div class="sidebar-brand-icon"><i class="fas fa-graduation-cap"></i></div>
+
+            <div class="sidebar-brand-icon">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo SMK">
+            </div>
+
             <div>
                 <h2>PPDB SMK</h2>
                 <p>Panel Administrasi</p>
             </div>
+
         </div>
-        <button class="sidebar-close" id="sidebarClose" aria-label="Tutup menu">
+
+        <button class="sidebar-close" id="sidebarClose">
             <i class="fas fa-times"></i>
         </button>
     </div>
@@ -225,18 +263,7 @@
                 <i class="fas fa-map-marker-alt"></i> Jenis Alamat
             </a>
         </div>
-        <div class="nav-label">Laporan</div>        <div class="nav-item">
-            <a href="{{ route('admin.siswa.export-pdf') }}" target="_blank">
-                <i class="fas fa-file-pdf"></i> Export PDF
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="{{ route('admin.siswa.export-excel') }}">
-                <i class="fas fa-file-excel"></i> Export Excel
-            </a>
-        </div>
 
-        @if(Auth::guard('admin')->user()?->isSuperAdmin())
         <div class="nav-label">Sistem</div>
         <div class="nav-item">
             <a href="{{ route('admin.activity-log.index') }}" class="{{ request()->routeIs('admin.activity-log.*')?'active':'' }}">
@@ -248,8 +275,6 @@
                 <i class="fas fa-database"></i> Backup Database
             </a>
         </div>
-        @endif
-
         <div class="nav-label">Lainnya</div>
         <div class="nav-item">
             <a href="{{ route('home') }}" target="_blank">
@@ -264,15 +289,6 @@
             </a>
         </div>
     </nav>
-    <!-- LOGOUT — form POST dengan CSRF -->
-    <div class="sidebar-footer">
-        <form method="POST" action="{{ route('admin.logout') }}" id="formLogoutSidebar">
-            @csrf
-            <button type="submit" class="btn-logout-sidebar">
-                <i class="fas fa-sign-out-alt"></i> Keluar
-            </button>
-        </form>
-    </div>
 </aside>
 
 <!-- MAIN -->
@@ -319,7 +335,7 @@
                         Profil Saya
                     </a>
                     <div style="border-top:1px solid var(--light)">
-                        <form method="POST" action="{{ route('admin.logout') }}" style="margin:0">
+                        <form method="POST" action="{{ route('admin.logout') }}" style="margin:0" id="formLogoutAva">
                             @csrf
                             <button type="submit"
                                     style="width:100%;display:flex;align-items:center;gap:.55rem;
@@ -389,5 +405,32 @@ document.addEventListener('click', function(e) {
 </script>
 @stack('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// Konfirmasi logout — muncul di semua tombol keluar (sidebar & dropdown profil)
+document.addEventListener('DOMContentLoaded', function () {
+    ['formLogoutSidebar', 'formLogoutAva'].forEach(function (id) {
+        const form = document.getElementById(id);
+        if (!form) return;
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Keluar dari akun?',
+                text: 'Anda akan diarahkan ke halaman login.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                reverseButtons: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
 </body>
 </html>

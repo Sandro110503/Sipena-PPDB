@@ -12,6 +12,8 @@ use App\Models\PeriodePpdb;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\RateLimiter;
+use App\Models\CalonSiswa;
 
 class PortalSiswaController extends Controller
 {
@@ -292,26 +294,60 @@ class PortalSiswaController extends Controller
     public function prosesResetPassword(Request $request)
     {
         $request->validate([
-            'nisn'                       => 'required|string',
-            'nomor_pendaftaran'          => 'required|string',
-            'tanggal_lahir'              => 'required|date',
-            'password_baru'              => 'required|min:8|confirmed',
-            'password_baru_confirmation' => 'required',
+            'nisn'                       => ['required', 'digits:10'],
+            'nomor_pendaftaran'          => ['required', 'string', 'max:30'],
+            'tanggal_lahir'              => [
+                'required',
+                'date',
+                'before:today',
+                'after:' . now()->subYears(25)->format('Y-m-d'), // batas usia wajar
+            ],
+            'password_baru'              => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                'regex:/^(?=.*[A-Za-z])(?=.*\d).+$/', // wajib huruf + angka
+            ],
+            'password_baru_confirmation' => ['required'],
         ], [
-            'password_baru.min'       => 'Password baru minimal 8 karakter.',
-            'password_baru.confirmed' => 'Konfirmasi password tidak cocok.',
+            'nisn.required'                 => 'NISN wajib diisi.',
+            'nisn.digits'                   => 'NISN harus terdiri dari tepat 10 digit angka.',
+            'nomor_pendaftaran.required'    => 'Nomor pendaftaran wajib diisi.',
+            'tanggal_lahir.required'        => 'Tanggal lahir wajib diisi.',
+            'tanggal_lahir.date'            => 'Format tanggal lahir tidak valid.',
+            'tanggal_lahir.before'          => 'Tanggal lahir tidak boleh melebihi hari ini.',
+            'tanggal_lahir.after'           => 'Tanggal lahir tidak valid, periksa kembali.',
+            'password_baru.required'        => 'Password baru wajib diisi.',
+            'password_baru.min'             => 'Password baru minimal 8 karakter.',
+            'password_baru.regex'           => 'Password harus mengandung kombinasi huruf dan angka.',
+            'password_baru.confirmed'       => 'Konfirmasi password baru tidak cocok.',
         ]);
 
-        $siswa = \App\Models\CalonSiswa::where('nisn', $request->nisn)
+        // ── Rate limiting: cegah brute-force tebak NISN/nomor pendaftaran ──
+        $throttleKey = 'reset-password:' . $request->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $detik = RateLimiter::availableIn($throttleKey);
+            return back()
+                ->withErrors(['nisn' => "Terlalu banyak percobaan. Silakan coba lagi dalam {$detik} detik."])
+                ->withInput($request->except(['password_baru', 'password_baru_confirmation']));
+        }
+
+        $siswa = CalonSiswa::where('nisn', $request->nisn)
             ->where('nomor_pendaftaran', $request->nomor_pendaftaran)
             ->whereDate('tanggal_lahir', $request->tanggal_lahir)
             ->first();
 
         if (!$siswa) {
+            RateLimiter::hit($throttleKey, 300); // kunci 5 menit setelah 5x gagal
+
             return back()->withErrors([
-                'nisn' => 'Data tidak ditemukan. Pastikan NISN, nomor pendaftaran, dan tanggal lahir sesuai.',
+                'nisn' => 'Data tidak ditemukan. Pastikan NISN, nomor pendaftaran, dan tanggal lahir sesuai data pendaftaran Anda.',
             ])->withInput($request->except(['password_baru', 'password_baru_confirmation']));
         }
+
+        RateLimiter::clear($throttleKey);
 
         $siswa->update(['password' => Hash::make($request->password_baru)]);
 

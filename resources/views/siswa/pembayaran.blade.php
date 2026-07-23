@@ -135,9 +135,9 @@ select.form-ctrl{cursor:pointer;}
     <div class="card-body">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.85rem">
             @php $rekenings = [
-                ['bank'=>'BRI','norek'=>'1234-5678-9012-3456','an'=>'SMK Negeri Contoh'],
-                ['bank'=>'BNI','norek'=>'987654321','an'=>'SMK Negeri Contoh'],
-                ['bank'=>'Mandiri','norek'=>'1400099999999','an'=>'SMK Negeri Contoh'],
+                ['bank'=>'BRI','norek'=>'1234-5678-9012-3456','an'=>'SMK Yadika 8'],
+                ['bank'=>'BNI','norek'=>'987654321','an'=>'SMK Yadika 8'],
+                ['bank'=>'Mandiri','norek'=>'1400099999999','an'=>'SMK Yadika 8'],
             ]; @endphp
             @foreach($rekenings as $r)
             <div class="rekening-card">

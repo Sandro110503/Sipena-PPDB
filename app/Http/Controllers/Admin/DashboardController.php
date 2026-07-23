@@ -16,6 +16,7 @@ class DashboardController extends Controller
             'menunggu'         => CalonSiswa::where('status_penerimaan', 'Menunggu')->count(),
             'diterima'         => CalonSiswa::where('status_penerimaan', 'Diterima')->count(),
             'ditolak'          => CalonSiswa::where('status_penerimaan', 'Ditolak')->count(),
+            'cadangan'         => CalonSiswa::where('status_penerimaan', 'Cadangan')->count(),
             'total_pembayaran' => PembayaranSiswa::where('status_pembayaran', 'Terverifikasi')->sum('jumlah_bayar'),
         ];
 

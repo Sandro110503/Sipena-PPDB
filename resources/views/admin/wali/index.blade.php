@@ -14,15 +14,14 @@
     <div class="table-wrapper">
         <table>
             <thead>
-                <tr><th>#</th><th>Nama</th><th>Jenis Kelamin</th><th>Hubungan</th><th>No HP</th><th>Pekerjaan</th><th>Aksi</th></tr>
+                <tr><th>#</th><th>Nama</th><th>Hubungan</th><th>No HP</th><th>Pekerjaan</th><th>Aksi</th></tr>
             </thead>
             <tbody>
             @forelse($wali as $i => $w)
             <tr>
                 <td class="text-muted">{{ $wali->firstItem() + $i }}</td>
                 <td><strong>{{ $w->nama_lengkap }}</strong></td>
-                <td>{{ $w->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
-                <td>{{ $w->hubungan }}</td>
+                <td>{{ match($w->hubungan) { 'AY' => 'Ayah', 'IB' => 'Ibu', 'WL' => 'Wali', default => $w->hubungan } }}</td>
                 <td>{{ $w->nomor_hp }}</td>
                 <td>{{ $w->pekerjaan }}</td>
                 <td><a href="{{ route('admin.wali.show', $w) }}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> Detail</a></td>

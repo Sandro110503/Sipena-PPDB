@@ -143,6 +143,28 @@
 }
 .btn-danger-sm:hover{background:#fca5a5;}
 
+.forgot {
+    text-align: right;
+    margin-top: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding-top: 0.25rem;
+}
+.forgot a {
+    font-size: 0.85rem;
+    color: #C9A227;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color .15s;
+}
+.forgot a:hover {
+    color: #1B2A4A;
+    text-decoration: underline;
+}
+.forgot a i {
+    margin-right: 4px;
+    font-size: 0.8rem;
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media(max-width:600px){
     .form-grid-2{grid-template-columns:1fr;}
@@ -187,38 +209,43 @@
             <span><i class="fas fa-user"></i> Data Diri</span>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ route('siswa.pengaturan.profil') }}" enctype="multipart/form-data">
-                @csrf @method('PUT')
+            <div class="avatar-wrap">
+                @if($siswa->foto)
+                    <img src="{{ Storage::url($siswa->foto) }}" class="avatar" alt="Foto" id="avatar-img">
+                @else
+                    <div class="avatar-placeholder" id="avatar-placeholder">
+                        {{ strtoupper(substr($siswa->nama_depan,0,1)) }}
+                    </div>
+                @endif
+                <div class="avatar-info">
+                    <label class="form-label" style="margin-bottom:.35rem">Foto Profil</label>
 
-                {{-- Foto Profil --}}
-                <div class="avatar-wrap">
-                    @if($siswa->foto)
-                        <img src="{{ Storage::url($siswa->foto) }}" class="avatar" alt="Foto" id="avatar-img">
-                    @else
-                        <div class="avatar-placeholder" id="avatar-placeholder">
-                            {{ strtoupper(substr($siswa->nama_depan,0,1)) }}
-                        </div>
-                    @endif
-                    <div class="avatar-info">
-                        <label class="form-label" style="margin-bottom:.35rem">Foto Profil</label>
+                    {{-- Form khusus upload foto --}}
+                    <form method="POST" action="{{ route('siswa.pengaturan.profil') }}" enctype="multipart/form-data" id="form-foto">
+                        @csrf @method('PUT')
                         <input type="file" name="foto" id="foto-input"
-                               class="form-control @error('foto') is-invalid @enderror"
-                               accept="image/jpg,image/jpeg,image/png"
-                               style="padding:.4rem .75rem;font-size:.8rem"
-                               onchange="previewFoto(this)">
+                            class="form-control @error('foto') is-invalid @enderror"
+                            accept="image/jpg,image/jpeg,image/png"
+                            style="padding:.4rem .75rem;font-size:.8rem"
+                            onchange="previewFoto(this); this.form.submit();">
                         <p>JPG/PNG, maks. 2MB</p>
                         @error('foto')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        @if($siswa->foto)
-                        <form method="POST" action="{{ route('siswa.pengaturan.hapus-foto') }}" style="margin-top:.5rem;display:inline"
-                              onsubmit="return confirm('Hapus foto profil?')">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="btn-danger-sm">
-                                <i class="fas fa-trash"></i> Hapus Foto
-                            </button>
-                        </form>
-                        @endif
-                    </div>
+                    </form>
+
+                    @if($siswa->foto)
+                    <form method="POST" action="{{ route('siswa.pengaturan.hapus-foto') }}" style="margin-top:.5rem"
+                        onsubmit="return confirm('Hapus foto profil?')">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="btn-danger-sm">
+                            <i class="fas fa-trash"></i> Hapus Foto
+                        </button>
+                    </form>
+                    @endif
                 </div>
+            </div>
+        
+            <form method="POST" action="{{ route('siswa.pengaturan.profil') }}" enctype="multipart/form-data">
+                @csrf @method('PUT')
 
                 {{-- Nama --}}
                 <div class="form-grid-2">
@@ -246,7 +273,6 @@
                         <input type="text"
                                value="{{ $siswa->jenis_kelamin==='L'?'Laki-laki':'Perempuan' }}"
                                class="form-control readonly-field" readonly>
-                        <div class="form-hint">Tidak dapat diubah.</div>
                     </div>
                 </div>
 
@@ -329,7 +355,7 @@
                     <select name="jenis_tempat_tinggal"
                             class="form-control @error('jenis_tempat_tinggal') is-invalid @enderror" required>
                         <option value="">— Pilih —</option>
-                        @foreach(['Rumah Orang Tua/Wali','Sewa','Kos','Asrama','Lainnya'] as $opt)
+                        @foreach(['Rumah Orang Tua/Wali','Sewa/Kost'] as $opt)
                         <option value="{{ $opt }}"
                             {{ old('jenis_tempat_tinggal',$alamat?->jenis_tempat_tinggal)===$opt?'selected':'' }}>
                             {{ $opt }}
@@ -415,13 +441,19 @@
                     <label class="form-label">Password Saat Ini <span class="req">*</span></label>
                     <div class="pw-wrap">
                         <input type="password" name="password_lama" id="pw0"
-                               class="form-control @error('password_lama') is-invalid @enderror"
-                               placeholder="Password yang sekarang" required autocomplete="current-password">
+                            class="form-control @error('password_lama') is-invalid @enderror"
+                            placeholder="Password yang sekarang" required autocomplete="current-password">
                         <button type="button" class="pw-toggle" onclick="togglePw('pw0',this)" tabindex="-1">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
                     @error('password_lama')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+
+                <div class="forgot">
+                    <a href="{{ route('siswa.reset-password') }}">
+                        <i class="fas fa-question-circle"></i> Lupa Password?
+                    </a>
                 </div>
 
                 <div class="form-group">

@@ -54,10 +54,33 @@
     {{-- Grafik Pendaftaran per Bulan --}}
     <div class="card">
         <div class="card-header">
-            <span><i class="fas fa-chart-line" style="color:#1a4a8a;margin-right:.5rem"></i>Pendaftaran per Periode PPDB</span>
+            <span><i class="fas fa-chart-line" style="color:#1a4a8a;margin-right:.5rem"></i> Pendaftaran per Bulan</span>
         </div>
         <div class="card-body">
             <canvas id="chartBulan" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+{{-- CHART TAMBAHAN: PERIODE & STATUS --}}
+<div class="grid-2" style="margin-bottom:1.5rem">
+    {{-- Pendaftaran per Periode PPDB --}}
+    <div class="card">
+        <div class="card-header">
+            <span><i class="fas fa-calendar-alt" style="color:#1a4a8a;margin-right:.5rem"></i> Pendaftaran per Periode PPDB</span>
+        </div>
+        <div class="card-body">
+            <canvas id="chartPeriode" height="200"></canvas>
+        </div>
+    </div>
+
+    {{-- Distribusi Status Pendaftaran --}}
+    <div class="card">
+        <div class="card-header">
+            <span><i class="fas fa-chart-pie" style="color:#1a4a8a;margin-right:.5rem"></i> Distribusi Status Pendaftaran</span>
+        </div>
+        <div class="card-body">
+            <canvas id="chartStatus" height="200"></canvas>
         </div>
     </div>
 </div>
@@ -113,34 +136,64 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const labels = @json($perBulan->pluck('bulan'));
-const data = @json($perBulan->pluck('jumlah'));
-
+// Chart Pendaftaran per Bulan
 new Chart(document.getElementById('chartBulan'), {
     type: 'bar',
     data: {
-        labels: labels,
+        labels: @json($perBulan->pluck('bulan')),
         datasets: [{
             label: 'Jumlah Pendaftar',
-            data: data,
+            data: @json($perBulan->pluck('jumlah')),
             backgroundColor: '#1a4a8a',
             borderRadius: 6,
         }]
     },
     options: {
         responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+
+// Chart Pendaftaran per Periode PPDB
+new Chart(document.getElementById('chartPeriode'), {
+    type: 'bar',
+    data: {
+        labels: @json($perPeriode->pluck('nama_periode')),
+        datasets: [{
+            label: 'Jumlah Pendaftar',
+            data: @json($perPeriode->pluck('jumlah')),
+            backgroundColor: '#e8a020',
+            borderRadius: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+
+// Chart Distribusi Status Pendaftaran
+new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Menunggu', 'Diterima', 'Ditolak', 'Cadangan'],
+        datasets: [{
+            data: [
+                {{ $stats['menunggu'] }},
+                {{ $stats['diterima'] }},
+                {{ $stats['ditolak'] }},
+                {{ $stats['cadangan'] }}
+            ],
+            backgroundColor: ['#d97706', '#16a34a', '#dc2626', '#0369a1'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        responsive: true,
         plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
-                }
-            }
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
         }
     }
 });
