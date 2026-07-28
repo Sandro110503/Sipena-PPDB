@@ -11,6 +11,7 @@
     <style>
         :root{--navy:#0f2744;--blue:#1a4a8a;--accent:#e8a020;--light:#f4f7fb;--white:#fff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--nav-h:58px;}
         *{box-sizing:border-box;margin:0;padding:0;}
+        html,body{overflow-x:hidden;max-width:100%;}
         body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--light);color:var(--text);-webkit-tap-highlight-color:transparent;}
 
         /* NAV */
@@ -24,6 +25,22 @@
         .nav-user strong{display:block;color:#fff;font-size:.82rem;}
         .btn-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:.38rem .8rem;border-radius:8px;font-family:inherit;font-size:.75rem;font-weight:600;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:.38rem;text-decoration:none;min-height:36px;touch-action:manipulation;}
         .btn-logout:hover{background:rgba(255,255,255,.18);}
+        .btn-logout span{display:none;}
+
+        /* HAMBURGER (mobile) */
+        .nav-toggle{display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:#fff;font-size:1.15rem;padding:.4rem;border-radius:8px;min-width:38px;min-height:38px;touch-action:manipulation;}
+        .nav-toggle:hover{background:rgba(255,255,255,.1);}
+
+        /* MOBILE DRAWER */
+        .nav-drawer{display:block;position:fixed;top:var(--nav-h);left:0;right:0;bottom:0;z-index:190;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s;}
+        .nav-drawer.open{opacity:1;pointer-events:all;}
+        .nav-drawer-inner{position:absolute;top:0;right:0;width:240px;max-width:80vw;height:100%;background:var(--navy);padding:.6rem 0;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow-y:auto;}
+        .nav-drawer.open .nav-drawer-inner{transform:translateX(0);}
+        .nav-drawer a{display:flex;align-items:center;gap:.75rem;padding:.85rem 1.25rem;color:rgba(255,255,255,.8);text-decoration:none;font-size:.86rem;font-weight:500;border-bottom:1px solid rgba(255,255,255,.06);}
+        .nav-drawer a:hover,.nav-drawer a.active{background:rgba(255,255,255,.08);color:#fff;}
+        .nav-drawer-user{padding:.9rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.1);color:#fff;}
+        .nav-drawer-user strong{display:block;font-size:.85rem;}
+        .nav-drawer-user span{font-size:.7rem;color:rgba(255,255,255,.5);}
 
         /* LAYOUT */
         .container{max-width:860px;margin:0 auto;padding:1.25rem 1rem;}
@@ -57,10 +74,16 @@
             .nav-user{display:block;}
             .nav-links-desk{display:flex!important;align-items:center;gap:.2rem;}
             .container{padding:1.5rem 1.25rem;}
+            .nav-toggle,.nav-drawer{display:none;}
+            .btn-logout span{display:inline;}
         }
         @media(max-width:600px){
             .grid-2{grid-template-columns:1fr;}
             .card-body{padding:.85rem;}
+            [style*="grid-template-columns:1fr 1fr;"],
+            [style*="grid-template-columns: 1fr 1fr;"]{
+                grid-template-columns:1fr!important;
+            }
         }
     </style>
     @stack('styles')
@@ -99,8 +122,32 @@
             @csrf
             <button type="submit" class="btn-logout"><i class="fas fa-sign-out-alt"></i> <span>Keluar</span></button>
         </form>
+        <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">
+            <i class="fas fa-bars" id="navIcon"></i>
+        </button>
     </div>
 </nav>
+
+{{-- Mobile Drawer --}}
+<div class="nav-drawer" id="navDrawer" role="dialog" aria-modal="true">
+    <div class="nav-drawer-inner">
+        <div class="nav-drawer-user">
+            <strong>{{ Auth::guard('siswa')->user()->nama_lengkap }}</strong>
+            <span>{{ Auth::guard('siswa')->user()->nomor_pendaftaran }}</span>
+        </div>
+        <a href="{{ route('siswa.dashboard') }}" class="{{ request()->routeIs('siswa.dashboard')?'active':'' }}">
+            <i class="fas fa-home" style="width:18px"></i> Dashboard
+        </a>
+        <a href="{{ route('siswa.pengaturan') }}" class="{{ request()->routeIs('siswa.pengaturan')?'active':'' }}">
+            <i class="fas fa-cog" style="width:18px"></i> Pengaturan
+        </a>
+        @if(Auth::guard('siswa')->user()->status_penerimaan === 'Diterima')
+        <a href="{{ route('siswa.pembayaran') }}" class="{{ request()->routeIs('siswa.pembayaran')?'active':'' }}">
+            <i class="fas fa-credit-card" style="width:18px"></i> Pembayaran
+        </a>
+        @endif
+    </div>
+</div>
 
 <main>
     <div class="container">
@@ -118,6 +165,33 @@
 @stack('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+// Buka/tutup drawer menu mobile
+(function(){
+    const toggle = document.getElementById('navToggle');
+    const drawer = document.getElementById('navDrawer');
+    const icon   = document.getElementById('navIcon');
+    if(!toggle || !drawer) return;
+    let open = false;
+    function openDrawer(){
+        open = true;
+        drawer.classList.add('open');
+        icon.className = 'fas fa-times';
+        toggle.setAttribute('aria-expanded','true');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeDrawer(){
+        open = false;
+        drawer.classList.remove('open');
+        icon.className = 'fas fa-bars';
+        toggle.setAttribute('aria-expanded','false');
+        document.body.style.overflow = '';
+    }
+    toggle.addEventListener('click', () => open ? closeDrawer() : openDrawer());
+    drawer.addEventListener('click', e => { if(e.target === drawer) closeDrawer(); });
+    document.addEventListener('keydown', e => { if(e.key === 'Escape' && open) closeDrawer(); });
+    drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', closeDrawer));
+})();
+
 // Konfirmasi logout siswa
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('formLogoutSiswa');

@@ -18,6 +18,7 @@
             --sidebar-w:255px;--topbar-h:58px;
         }
         *{box-sizing:border-box;margin:0;padding:0;}
+        html,body{overflow-x:hidden;max-width:100%;}
         body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--light);color:var(--text);-webkit-tap-highlight-color:transparent;}
 
         /* ====== SIDEBAR ====== */
@@ -176,6 +177,13 @@
             .stat-grid{grid-template-columns:1fr 1fr;}
             .grid-2{grid-template-columns:1fr;}
             .content{padding:.9rem;}
+            /* Paksa grid 2 kolom inline (style="grid-template-columns:1fr 1fr")
+               ikut collapse jadi 1 kolom di layar kecil, karena inline style
+               punya prioritas lebih tinggi dari class/media query biasa */
+            [style*="grid-template-columns:1fr 1fr;"],
+            [style*="grid-template-columns: 1fr 1fr;"]{
+                grid-template-columns:1fr!important;
+            }
         }
     </style>
     @stack('styles')

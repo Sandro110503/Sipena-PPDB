@@ -16,6 +16,7 @@
         }
         *{box-sizing:border-box;margin:0;padding:0;}
         html{scroll-behavior:smooth;}
+        html,body{overflow-x:hidden;max-width:100%;}
         body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--light);color:var(--text);-webkit-tap-highlight-color:transparent;}
 
         /* ===================== NAVBAR ===================== */
@@ -112,6 +113,12 @@
             .form-grid{grid-template-columns:1fr;}
             .col-span-2{grid-column:span 1;}
             .container{padding:1rem .85rem;}
+            /* Paksa grid inline (style="grid-template-columns:...") yang tidak
+               pakai class .form-grid ikut collapse jadi 1 kolom di layar kecil */
+            [style*="grid-template-columns:1fr 1fr;"],
+            [style*="grid-template-columns: 1fr 1fr;"]{
+                grid-template-columns:1fr!important;
+            }
         }
         @media(max-width:480px){
             .card-body{padding:.85rem;}
