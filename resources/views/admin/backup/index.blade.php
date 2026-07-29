@@ -64,13 +64,6 @@
             <div class="info-lbl">Backup Terakhir</div>
         </div>
     </div>
-    <div class="info-card">
-        <div class="info-icon" style="background:#ede9fe;color:#5b21b6"><i class="fas fa-calendar-check"></i></div>
-        <div>
-            <div class="info-val" style="font-size:1rem">{{ $pengaturan->jenis === 'nonaktif' ? 'Nonaktif' : ($pengaturan->jenis === 'mingguan' ? 'Mingguan' : 'Bulanan') }}</div>
-            <div class="info-lbl">Backup Otomatis</div>
-        </div>
-    </div>
 </div>
 
 {{-- Peringatan --}}

@@ -71,9 +71,9 @@ class DatabaseSeeder extends Seeder
             'is_aktif'      => true,
         ]);
 
-        $this->call([
-            PeriodePPDBSeeder::class,
-            CalonSiswaSeeder::class,
-        ]);
+       // $this->call([
+//            PeriodePPDBSeeder::class,
+         //   CalonSiswaSeeder::class,
+       // ]);
     }
 }

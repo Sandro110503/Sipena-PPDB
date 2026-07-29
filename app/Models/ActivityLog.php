@@ -21,7 +21,7 @@ class ActivityLog extends Model
 
     public function admin()
     {
-        return $this->belongsTo(Admin::class);
+        return $this->belongsTo(Admin::class, 'admin_id', 'id_admin');
     }
 
     /**
@@ -64,7 +64,7 @@ class ActivityLog extends Model
         $admin = Auth::guard('admin')->user();
 
         return static::create([
-            'admin_id'   => $admin?->id,
+            'admin_id'   => $admin?->id_admin,
             'nama_admin' => $admin?->nama ?? 'Sistem',
             'modul'      => $modul,
             'aktivitas'  => $aktivitas,

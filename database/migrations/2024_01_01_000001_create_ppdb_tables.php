@@ -209,7 +209,7 @@ return new class extends Migration
             $table->foreignId('id_siswa')->constrained('calon_siswa', 'id_siswa')->cascadeOnDelete();
             $table->foreignId('id_jurusan')->constrained('jurusan', 'id_jurusan');
             $table->date('tanggal_pendaftaran');
-            $table->tinyInteger('urutan_pilihan')->default(1)->comment('1 = pilihan pertama, 2 = pilihan kedua');
+            $table->tinyInteger('urutan_pilihan')->default(1);
             $table->enum('status', ['Aktif', 'Diterima', 'Ditolak'])->default('Aktif');
             $table->string('keterangan_lainnya')->nullable();
             $table->timestamps();
