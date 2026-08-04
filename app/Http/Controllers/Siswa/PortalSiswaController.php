@@ -3,14 +3,20 @@
 namespace App\Http\Controllers\Siswa;
 
 use App\Http\Controllers\Controller;
+use App\Mail\DokumenBaruDiunggah;
+use App\Mail\PembayaranBaruDiunggah;
+use App\Models\Admin;
 use App\Models\Alamat;
 use App\Models\AlamatCalonSiswa;
 use App\Models\MetodePembayaran;
 use App\Models\PembayaranSiswa;
+use App\Services\BerkasPersyaratanService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use App\Models\PeriodePpdb;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\RateLimiter;
 use App\Models\CalonSiswa;
@@ -37,9 +43,13 @@ class PortalSiswaController extends Controller
         $sudahBayar              = $pembayaranTerverifikasi !== null;
         $bisaUploadBayar         = !$sudahBayar && !$pembayaranMenunggu;
 
+        $status    = BerkasPersyaratanService::status($siswa->id_siswa);
+        $ringkasan = BerkasPersyaratanService::jumlahLengkap($siswa->id_siswa);
+
         return view('siswa.dashboard', compact(
             'siswa', 'sudahBayar', 'bisaUploadBayar',
-            'pembayaranTerverifikasi', 'pembayaranMenunggu', 'pembayaranDitolak'
+            'pembayaranTerverifikasi', 'pembayaranMenunggu', 'pembayaranDitolak',
+            'status', 'ringkasan'
         ));
     }
 
@@ -96,7 +106,7 @@ class PortalSiswaController extends Controller
 
         $path = $request->file('bukti_bayar')->store('bukti-pembayaran', 'public');
 
-        PembayaranSiswa::create([
+        $pembayaran = PembayaranSiswa::create([
             'id_siswa'          => $siswa->id_siswa,
             'kode_metode_bayar' => $request->kode_metode_bayar,
             'jumlah_bayar'      => $request->jumlah_bayar,
@@ -106,8 +116,39 @@ class PortalSiswaController extends Controller
             'status_pembayaran' => 'Menunggu Verifikasi',
         ]);
 
+        // Kabari panitia yang mengaktifkan notifikasi pembayaran baru via email.
+        $penerima = Admin::where('is_aktif', true)
+            ->where('notif_pembayaran_baru', true)
+            ->where('notif_email', true)
+            ->pluck('email');
+
+        if ($penerima->isNotEmpty()) {
+            try {
+                Mail::to($penerima->all())->send(new PembayaranBaruDiunggah($pembayaran));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
         return redirect()->route('siswa.pembayaran')
             ->with('success', 'Bukti pembayaran berhasil diunggah! Silakan tunggu verifikasi dari panitia.');
+    }
+
+    /**
+     * Unduh kwitansi PDF setelah pembayaran terverifikasi.
+     */
+    public function downloadKwitansi()
+    {
+        $siswa = $this->siswa();
+
+        $pembayaran = $siswa->pembayaran()
+            ->where('status_pembayaran', 'Terverifikasi')
+            ->with(['metodePembayaran', 'verifikator', 'siswa.pendaftaranJurusan.jurusan'])
+            ->firstOrFail();
+
+        $pdf = Pdf::loadView('pembayaran.kwitansi-pdf', compact('pembayaran'))->setPaper('a5', 'portrait');
+
+        return $pdf->download('kwitansi-' . $siswa->nomor_pendaftaran . '.pdf');
     }
 
     // ── Halaman Pengaturan (tab: profil | alamat | password | notifikasi) ──────
@@ -353,5 +394,73 @@ class PortalSiswaController extends Controller
 
         return redirect()->route('siswa.login')
             ->with('success', 'Password berhasil diatur ulang. Silakan login dengan password baru.');
+    }
+
+    // ── Berkas Persyaratan (tanpa tabel DB — murni berbasis storage) ────────────
+
+    public function berkas()
+    {
+        $siswa  = $this->siswa();
+        $status = BerkasPersyaratanService::status($siswa->id_siswa);
+        $ringkasan = BerkasPersyaratanService::jumlahLengkap($siswa->id_siswa);
+
+        return view('siswa.berkas', compact('siswa', 'status', 'ringkasan'));
+    }
+
+    public function uploadBerkas(Request $request, string $jenis)
+    {
+        $siswa = $this->siswa();
+
+        $jenisValid = BerkasPersyaratanService::jenisDokumen();
+        abort_unless(array_key_exists($jenis, $jenisValid), 404);
+
+        $statusSaatIni = BerkasPersyaratanService::status($siswa->id_siswa)[$jenis]['status'];
+        if ($statusSaatIni === 'Terverifikasi') {
+            return back()->with('error', 'Dokumen ini sudah terverifikasi dan tidak bisa diunggah ulang.');
+        }
+
+        $meta = $jenisValid[$jenis];
+
+        $request->validate([
+            'berkas' => "required|file|mimes:{$meta['mimes']}|max:{$meta['max_kb']}",
+        ], [
+            'berkas.required' => 'Silakan pilih file terlebih dahulu.',
+            'berkas.mimes'    => 'Format file harus: ' . str_replace(',', ', ', $meta['mimes']) . '.',
+            'berkas.max'      => 'Ukuran file maksimal ' . round($meta['max_kb'] / 1024, 1) . ' MB.',
+        ]);
+
+        $dokumen = BerkasPersyaratanService::simpan($siswa->id_siswa, $jenis, $request->file('berkas'));
+
+        $penerima = Admin::where('is_aktif', true)
+            ->where('notif_dokumen_baru', true)
+            ->where('notif_email', true)
+            ->pluck('email');
+
+        if ($penerima->isNotEmpty()) {
+            try {
+                Mail::to($penerima->all())->send(new DokumenBaruDiunggah($dokumen));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return back()->with('success', $meta['label'] . ' berhasil diunggah.');
+    }
+
+    public function hapusBerkas(string $jenis)
+    {
+        $siswa = $this->siswa();
+
+        $jenisValid = BerkasPersyaratanService::jenisDokumen();
+        abort_unless(array_key_exists($jenis, $jenisValid), 404);
+
+        $statusSaatIni = BerkasPersyaratanService::status($siswa->id_siswa)[$jenis]['status'];
+        if ($statusSaatIni === 'Terverifikasi') {
+            return back()->with('error', 'Dokumen ini sudah terverifikasi dan tidak bisa dihapus.');
+        }
+
+        BerkasPersyaratanService::hapus($siswa->id_siswa, $jenis);
+
+        return back()->with('success', $jenisValid[$jenis]['label'] . ' berhasil dihapus.');
     }
 }

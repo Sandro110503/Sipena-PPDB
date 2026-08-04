@@ -119,7 +119,7 @@
         {{-- Pilihan Jurusan --}}
         <div class="card" style="margin-bottom:1.25rem;border-radius:14px">
             <div style="padding:.85rem 1.25rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-weight:700;font-size:.875rem;display:flex;align-items:center;gap:.5rem">
-                <i class="fas fa-school" style="color:#1a4a8a"></i> Pilihan Jurusan
+                <i class="fas fa-school" style="color:#1a4a8a"></i>  Jurusan
             </div>
             <div id="jurusanContainer" style="padding:.85rem 1.25rem">
                 @foreach($siswa->pendaftaranJurusan->sortBy('urutan_pilihan') as $pj)
@@ -143,7 +143,6 @@
                         </div>
                         <div>
                             <div style="font-weight:700;font-size:.875rem;color:#1e293b">{{ $pj->jurusan->nama_jurusan }}</div>
-                            <div style="font-size:.75rem;color:#64748b">Pilihan ke-{{ $pj->urutan_pilihan }}</div>
                         </div>
                     </div>
                     <span style="font-size:.7rem;font-weight:700;padding:.25rem .75rem;border-radius:999px;white-space:nowrap;{{ $stStyle }}">
@@ -290,7 +289,6 @@ function applyJurusan(list) {
                 <div style="width:36px;height:36px;border-radius:8px;background:${jc.bg};display:grid;place-items:center;font-size:.65rem;font-weight:800;color:${jc.color};flex-shrink:0">${pj.urutan}</div>
                 <div>
                     <div style="font-weight:700;font-size:.875rem;color:#1e293b">${pj.nama}</div>
-                    <div style="font-size:.75rem;color:#64748b">Pilihan ke-${pj.urutan}</div>
                 </div>
             </div>
             <span style="font-size:.7rem;font-weight:700;padding:.25rem .75rem;border-radius:999px;white-space:nowrap;${st}">${pj.status}</span>

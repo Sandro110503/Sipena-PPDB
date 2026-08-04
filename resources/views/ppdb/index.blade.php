@@ -194,7 +194,7 @@
                 <div class="petunjuk-box">
                     <div class="petunjuk-title">Petunjuk Pengisian:</div>
                     <ol>
-                        <li>Pilih <strong>hanya satu</strong> jurusan yang paling sesuai dengan minat dan kemampuan Anda.</li>
+                        <li>Pilih <strong>satu</strong> jurusan yang paling sesuai dengan minat dan kemampuan Anda.</li>
                         <li>Perhatikan sisa kuota pada setiap jurusan sebelum menentukan pilihan.</li>
                         <li>Pastikan pilihan sudah benar sebelum formulir dikirim, karena perubahan jurusan setelah pendaftaran harus melalui pihak sekolah.</li>
                         <li>Kolom bertanda <strong>*</strong> wajib diisi.</li>
@@ -437,7 +437,7 @@
                 <div class="petunjuk-box">
                     <div class="petunjuk-title">Petunjuk Pengisian:</div>
                     <ol>
-                        <li>Gunakan email yang <strong>masih aktif</strong>, karena akan digunakan untuk login ke Portal Siswa dan menerima notifikasi status pendaftaran.</li>
+                        <li>Gunakan email yang <strong>masih aktif</strong>, karena akan digunakan untuk menerima notifikasi status pendaftaran.</li>
                         <li>Password minimal 8 karakter, kombinasikan huruf dan angka agar lebih aman dan mudah diingat.</li>
                         <li>Pastikan Konfirmasi Password diisi sama persis dengan Password.</li>
                         <li>Nomor HP diisi dengan nomor yang dapat dihubungi sebagai kontak tambahan.</li>
@@ -450,7 +450,6 @@
                         <input type="email" name="email" value="{{ old('email') }}"
                             class="form-control @error('email') is-invalid @enderror"
                             placeholder="email@contoh.com" required>
-                        <div class="form-hint">Digunakan untuk login portal siswa</div>
                         @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="form-group">

@@ -73,7 +73,10 @@ select.form-ctrl{cursor:pointer;}
         </div>
         @endforeach
     </div>
-    <div>
+    <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
+        <a href="{{ route('siswa.pembayaran.kwitansi') }}" style="background:#0f2744;color:#fff;padding:.65rem 1.5rem;border-radius:10px;text-decoration:none;font-weight:700;font-size:.875rem;display:inline-flex;align-items:center;gap:.5rem">
+            <i class="fas fa-file-pdf"></i> Unduh Kwitansi PDF
+        </a>
         <a href="{{ route('siswa.dashboard') }}" style="background:#166534;color:#fff;padding:.65rem 1.5rem;border-radius:10px;text-decoration:none;font-weight:700;font-size:.875rem;display:inline-flex;align-items:center;gap:.5rem">
             <i class="fas fa-home"></i> Kembali ke Dashboard
         </a>

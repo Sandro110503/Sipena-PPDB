@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\Admin\DokumenController;
 use App\Http\Controllers\Admin\MetodePembayaranController;
 use App\Http\Controllers\Admin\PembayaranController;
 use App\Http\Controllers\Admin\WaliController;
@@ -52,6 +53,11 @@ Route::middleware('web')->group(function () {
             Route::get('/dashboard',   [PortalSiswaController::class, 'dashboard'])->name('dashboard');
             Route::get('/pembayaran',  [PortalSiswaController::class, 'formPembayaran'])->name('pembayaran');
             Route::post('/pembayaran', [PortalSiswaController::class, 'uploadBukti'])->name('pembayaran.upload');
+            Route::get('/pembayaran/kwitansi', [PortalSiswaController::class, 'downloadKwitansi'])->name('pembayaran.kwitansi');
+
+            Route::get('/berkas',                 [PortalSiswaController::class, 'berkas'])->name('berkas');
+            Route::post('/berkas/{jenis}',        [PortalSiswaController::class, 'uploadBerkas'])->name('berkas.upload');
+            Route::delete('/berkas/{jenis}',      [PortalSiswaController::class, 'hapusBerkas'])->name('berkas.hapus');
 
             // ── Halaman Pengaturan Akun (profil + alamat + password + notifikasi) ──
             Route::get('/pengaturan',             [PortalSiswaController::class, 'pengaturan'])->name('pengaturan');
@@ -151,6 +157,12 @@ Route::middleware('web')->group(function () {
                 Route::get('/',                          [PembayaranController::class, 'index'])->name('index');
                 Route::get('/{pembayaran}',              [PembayaranController::class, 'show'])->name('show');
                 Route::patch('/{pembayaran}/verifikasi', [PembayaranController::class, 'verifikasi'])->name('verifikasi');
+                Route::get('/{pembayaran}/kwitansi',     [PembayaranController::class, 'kwitansi'])->name('kwitansi');
+            });
+
+            // Verifikasi Dokumen Persyaratan
+            Route::prefix('dokumen')->name('dokumen.')->group(function () {
+                Route::patch('/{dokumen}/verifikasi', [DokumenController::class, 'verifikasi'])->name('verifikasi');
             });
 
             // Metode Pembayaran

@@ -23,6 +23,7 @@ class Admin extends Authenticatable
         'foto',
         'notif_pendaftar_baru',
         'notif_pembayaran_baru',
+        'notif_dokumen_baru',
         'notif_email',
         'tampilan_rows',
     ];
@@ -37,6 +38,7 @@ class Admin extends Authenticatable
         'is_aktif'                => 'boolean',
         'notif_pendaftar_baru'    => 'boolean',
         'notif_pembayaran_baru'   => 'boolean',
+        'notif_dokumen_baru'      => 'boolean',
         'notif_email'             => 'boolean',
         'tampilan_rows'           => 'integer',
     ];
@@ -44,6 +46,7 @@ class Admin extends Authenticatable
     protected $attributes = [
         'notif_pendaftar_baru'    => true,
         'notif_pembayaran_baru'   => true,
+        'notif_dokumen_baru'      => true,
         'notif_email'             => false,
         'tampilan_rows'           => 25,
     ];
@@ -75,10 +78,23 @@ class Admin extends Authenticatable
     }
 
     // Admin yang memverifikasi pembayaran
+    // Sebelumnya mereferensikan Pembayaran::class yang tidak pernah ada
+    // (nama model sebenarnya PembayaranSiswa) — relasi ini akan selalu error
+    // kalau dipanggil. Sudah diperbaiki.
     public function pembayaranDiverifikasi()
     {
         return $this->hasMany(
-            Pembayaran::class,
+            PembayaranSiswa::class,
+            'id_admin',
+            'id_admin'
+        );
+    }
+
+    // Admin yang memverifikasi dokumen persyaratan
+    public function dokumenDiverifikasi()
+    {
+        return $this->hasMany(
+            DokumenPersyaratan::class,
             'id_admin',
             'id_admin'
         );

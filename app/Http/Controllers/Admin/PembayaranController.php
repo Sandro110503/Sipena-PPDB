@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\StatusPembayaranDiperbarui;
 use App\Models\PembayaranSiswa;
 use App\Models\MetodePembayaran;
 use App\Models\ActivityLog;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class PembayaranController extends Controller
 {
@@ -41,9 +45,13 @@ class PembayaranController extends Controller
             'keterangan'        => 'nullable|string|max:500',
         ]);
 
+        $statusBerubah = $pembayaran->status_pembayaran !== $request->status_pembayaran;
+
         $pembayaran->update([
             'status_pembayaran' => $request->status_pembayaran,
             'keterangan'        => $request->keterangan,
+            // Catat admin yang melakukan verifikasi (audit trail).
+            'id_admin'          => Auth::guard('admin')->id(),
         ]);
 
         ActivityLog::catat(
@@ -52,6 +60,32 @@ class PembayaranController extends Controller
             "Memverifikasi pembayaran siswa {$pembayaran->siswa?->nama_depan} menjadi \"{$request->status_pembayaran}\"."
         );
 
+        // Kabari siswa lewat email hanya jika statusnya benar-benar berubah,
+        // dan hanya untuk keputusan final (Terverifikasi/Ditolak).
+        if ($statusBerubah && in_array($request->status_pembayaran, ['Terverifikasi', 'Ditolak']) && $pembayaran->siswa?->email) {
+            try {
+                Mail::to($pembayaran->siswa->email)->send(new StatusPembayaranDiperbarui($pembayaran));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
         return back()->with('success', 'Status pembayaran berhasil diperbarui.');
+    }
+
+    /**
+     * Unduh kwitansi PDF pembayaran yang sudah terverifikasi (sisi admin).
+     */
+    public function kwitansi(PembayaranSiswa $pembayaran)
+    {
+        abort_unless($pembayaran->status_pembayaran === 'Terverifikasi', 404);
+
+        $pembayaran->load(['siswa.pendaftaranJurusan.jurusan', 'metodePembayaran', 'verifikator']);
+
+        $pdf = Pdf::loadView('pembayaran.kwitansi-pdf', compact('pembayaran'))->setPaper('a5', 'portrait');
+
+        ActivityLog::catat('Pembayaran', 'unduh', "Mengunduh kwitansi pembayaran siswa {$pembayaran->siswa?->nama_depan}.");
+
+        return $pdf->download('kwitansi-' . $pembayaran->siswa?->nomor_pendaftaran . '.pdf');
     }
 }

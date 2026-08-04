@@ -548,6 +548,18 @@
 
                 <div class="toggle-row">
                     <div class="toggle-info">
+                        <h4>Dokumen Baru</h4>
+                        <p>Tampilkan alert saat ada dokumen persyaratan diunggah siswa.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="notif_dokumen_baru" value="1"
+                               {{ $admin->notif_dokumen_baru ? 'checked' : '' }}>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row">
+                    <div class="toggle-info">
                         <h4>Kirim ke Email</h4>
                         <p>Ringkasan harian dikirim ke
                             <strong>{{ $admin->email ?? '(email belum diisi)' }}</strong>.

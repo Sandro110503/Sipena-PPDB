@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\StatusPembayaranDiperbarui;
 use App\Models\CalonSiswa;
 use App\Models\Jurusan;
 use App\Models\ActivityLog;
@@ -11,12 +12,17 @@ use App\Models\PeriodePpdb;
 use App\Exports\SiswaExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
 
 class StudentController extends Controller
 {
     protected array $validStatus = ['Menunggu', 'Diterima', 'Ditolak', 'Cadangan'];
-    protected array $validStatusBayar = ['Menunggu', 'Diverifikasi', 'Ditolak'];
+    // Sebelumnya nilainya ['Menunggu','Diverifikasi','Ditolak'] — tidak cocok dengan
+    // nilai status_pembayaran yang sebenarnya dipakai di seluruh aplikasi
+    // (lihat PembayaranController::verifikasi dan migrasi tabel pembayaran_siswa).
+    protected array $validStatusBayar = ['Menunggu Verifikasi', 'Terverifikasi', 'Ditolak'];
 
     // -------------------------------------------------------------------------
     // INDEX
@@ -97,7 +103,9 @@ class StudentController extends Controller
             'alamatCalonSiswa.jenisAlamat',
         ]);
 
-        return view('admin.students.show', compact('calonSiswa'));
+        $berkas = \App\Services\BerkasPersyaratanService::status($calonSiswa->id_siswa);
+
+        return view('admin.students.show', compact('calonSiswa', 'berkas'));
     }
 
     // -------------------------------------------------------------------------
@@ -279,16 +287,27 @@ class StudentController extends Controller
             return back()->with('info', 'Status pembayaran tidak berubah.');
         }
 
-        if (empty($pembayaran->bukti_pembayaran)) {
+        // Sebelumnya mengecek kolom 'bukti_pembayaran' yang tidak ada di skema DB
+        // (nama kolom sebenarnya adalah 'bukti_bayar'), sehingga pengecekan ini
+        // tidak pernah berfungsi. Sudah diperbaiki.
+        if (empty($pembayaran->bukti_bayar)) {
             return back()->with('error', 'Tidak dapat memverifikasi pembayaran karena bukti pembayaran belum diunggah.');
         }
 
         $statusLama = $pembayaran->status_pembayaran;
 
-        $updateData = ['status_pembayaran' => $request->status];
+        $updateData = [
+            'status_pembayaran' => $request->status,
+            // Catat admin yang melakukan verifikasi (audit trail), konsisten
+            // dengan PembayaranController::verifikasi.
+            'id_admin' => Auth::guard('admin')->id(),
+        ];
 
+        // Sebelumnya menulis ke kolom 'catatan_verifikasi' yang tidak ada di skema DB
+        // (nama kolom sebenarnya adalah 'keterangan'), sehingga catatan yang diisi
+        // admin tidak pernah benar-benar tersimpan. Sudah diperbaiki.
         if ($request->filled('catatan')) {
-            $updateData['catatan_verifikasi'] = $request->catatan;
+            $updateData['keterangan'] = $request->catatan;
         }
 
         $pembayaran->update($updateData);
@@ -300,6 +319,15 @@ class StudentController extends Controller
             'verifikasi',
             "Mengubah status pembayaran siswa {$namaSiswa} dari \"{$statusLama}\" menjadi \"{$request->status}\"."
         );
+
+        // Kabari siswa lewat email, konsisten dengan PembayaranController::verifikasi.
+        if (in_array($request->status, ['Terverifikasi', 'Ditolak']) && $pembayaran->siswa?->email) {
+            try {
+                Mail::to($pembayaran->siswa->email)->send(new StatusPembayaranDiperbarui($pembayaran));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
 
         return back()->with('success', 'Status pembayaran berhasil diperbarui.');
     }

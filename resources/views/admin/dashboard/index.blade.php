@@ -85,6 +85,51 @@
     </div>
 </div>
 
+{{-- CHART PEMBAYARAN & DOKUMEN --}}
+<div class="grid-3" style="margin-bottom:1.5rem">
+    {{-- Pembayaran per Metode --}}
+    <div class="card">
+        <div class="card-header">
+            <span><i class="fas fa-wallet" style="color:#1a4a8a;margin-right:.5rem"></i> Pembayaran Terverifikasi per Metode</span>
+        </div>
+        <div class="card-body">
+            @if($pembayaranPerMetode->isEmpty())
+            <div style="text-align:center;color:#94a3b8;padding:2.5rem 0;font-size:.82rem">Belum ada pembayaran terverifikasi.</div>
+            @else
+            <canvas id="chartMetodeBayar" height="200"></canvas>
+            @endif
+        </div>
+    </div>
+
+    {{-- Status Verifikasi Pembayaran --}}
+    <div class="card">
+        <div class="card-header">
+            <span><i class="fas fa-tasks" style="color:#1a4a8a;margin-right:.5rem"></i> Status Verifikasi Pembayaran</span>
+        </div>
+        <div class="card-body">
+            @if($pembayaranPerStatus->isEmpty())
+            <div style="text-align:center;color:#94a3b8;padding:2.5rem 0;font-size:.82rem">Belum ada data pembayaran masuk.</div>
+            @else
+            <canvas id="chartStatusBayar" height="200"></canvas>
+            @endif
+        </div>
+    </div>
+
+    {{-- Status Verifikasi Dokumen --}}
+    <div class="card">
+        <div class="card-header">
+            <span><i class="fas fa-folder-open" style="color:#1a4a8a;margin-right:.5rem"></i> Status Verifikasi Dokumen</span>
+        </div>
+        <div class="card-body">
+            @if($dokumenPerStatus->isEmpty())
+            <div style="text-align:center;color:#94a3b8;padding:2.5rem 0;font-size:.82rem">Belum ada dokumen yang diunggah.</div>
+            @else
+            <canvas id="chartStatusDokumen" height="200"></canvas>
+            @endif
+        </div>
+    </div>
+</div>
+
 {{-- TABEL TERBARU --}}
 <div class="card">
     <div class="card-header">
@@ -197,5 +242,79 @@ new Chart(document.getElementById('chartStatus'), {
         }
     }
 });
+
+@if($pembayaranPerMetode->isNotEmpty())
+// Chart Pembayaran per Metode
+new Chart(document.getElementById('chartMetodeBayar'), {
+    type: 'bar',
+    data: {
+        labels: @json($pembayaranPerMetode->pluck('metode')),
+        datasets: [{
+            label: 'Jumlah Transaksi',
+            data: @json($pembayaranPerMetode->pluck('jumlah')),
+            backgroundColor: '#166534',
+            borderRadius: 6,
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    afterLabel: function(ctx) {
+                        const total = @json($pembayaranPerMetode->pluck('total'));
+                        return 'Total: Rp ' + Number(total[ctx.dataIndex]).toLocaleString('id-ID');
+                    }
+                }
+            }
+        },
+        scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+@endif
+
+@if($pembayaranPerStatus->isNotEmpty())
+// Chart Status Verifikasi Pembayaran
+new Chart(document.getElementById('chartStatusBayar'), {
+    type: 'doughnut',
+    data: {
+        labels: @json($pembayaranPerStatus->keys()),
+        datasets: [{
+            data: @json($pembayaranPerStatus->values()),
+            backgroundColor: ['#16a34a', '#d97706', '#dc2626', '#0369a1'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+        }
+    }
+});
+@endif
+
+@if($dokumenPerStatus->isNotEmpty())
+// Chart Status Verifikasi Dokumen
+new Chart(document.getElementById('chartStatusDokumen'), {
+    type: 'doughnut',
+    data: {
+        labels: @json($dokumenPerStatus->keys()),
+        datasets: [{
+            data: @json($dokumenPerStatus->values()),
+            backgroundColor: ['#16a34a', '#d97706', '#dc2626', '#0369a1'],
+            borderWidth: 0,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+        }
+    }
+});
+@endif
 </script>
 @endpush

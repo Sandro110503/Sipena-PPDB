@@ -134,6 +134,7 @@ class ProfileController extends Controller
         $admin->update([
             'notif_pendaftar_baru'  => $request->boolean('notif_pendaftar_baru'),
             'notif_pembayaran_baru' => $request->boolean('notif_pembayaran_baru'),
+            'notif_dokumen_baru'    => $request->boolean('notif_dokumen_baru'),
             'notif_email'           => $request->boolean('notif_email'),
             'tampilan_rows'         => $request->tampilan_rows,
         ]);

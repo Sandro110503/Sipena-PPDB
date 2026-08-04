@@ -50,6 +50,34 @@ class DashboardController extends Controller
         ->orderBy('periode_ppdb.id_periode')
         ->get();
 
-        return view('admin.dashboard.index', compact('stats', 'jurusan', 'pendaftarTerbaru', 'perBulan', 'perPeriode'));
+        // Distribusi pembayaran per metode (hanya yang sudah terverifikasi).
+        $pembayaranPerMetode = PembayaranSiswa::join(
+            'metode_pembayaran',
+            'pembayaran_siswa.kode_metode_bayar',
+            '=',
+            'metode_pembayaran.kode_metode_bayar'
+        )
+        ->where('pembayaran_siswa.status_pembayaran', 'Terverifikasi')
+        ->selectRaw('metode_pembayaran.deskripsi_metode_bayar as metode, COUNT(*) as jumlah, SUM(pembayaran_siswa.jumlah_bayar) as total')
+        ->groupBy('metode_pembayaran.kode_metode_bayar', 'metode_pembayaran.deskripsi_metode_bayar')
+        ->orderByDesc('jumlah')
+        ->get();
+
+        // Distribusi status verifikasi pembayaran (semua transaksi masuk).
+        $pembayaranPerStatus = PembayaranSiswa::selectRaw('status_pembayaran, COUNT(*) as jumlah')
+            ->groupBy('status_pembayaran')
+            ->get()
+            ->pluck('jumlah', 'status_pembayaran');
+
+        // Distribusi status verifikasi dokumen persyaratan.
+        $dokumenPerStatus = \App\Models\DokumenPersyaratan::selectRaw('status_verifikasi, COUNT(*) as jumlah')
+            ->groupBy('status_verifikasi')
+            ->get()
+            ->pluck('jumlah', 'status_verifikasi');
+
+        return view('admin.dashboard.index', compact(
+            'stats', 'jurusan', 'pendaftarTerbaru', 'perBulan', 'perPeriode',
+            'pembayaranPerMetode', 'pembayaranPerStatus', 'dokumenPerStatus'
+        ));
     }
 }

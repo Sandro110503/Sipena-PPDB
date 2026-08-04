@@ -247,11 +247,86 @@
                 @if($rs->wali->nomor_hp)
                 <div class="text-muted"><i class="fas fa-phone" style="width:14px"></i> {{ $rs->wali->nomor_hp }}</div>
                 @endif
+
+                {{-- Alamat Wali --}}
+                @if($rs->wali->alamat)
+                <div class="text-muted" style="margin-top:.4rem;padding-top:.4rem;border-top:1px dashed #e2e8f0">
+                    <i class="fas fa-map-marker-alt" style="width:14px"></i>
+                    {{ $rs->wali->alamat->jenis_tempat_tinggal }}
+                    @if($rs->wali->alamat->nama_jalan), {{ $rs->wali->alamat->nama_jalan }}@endif
+                    @if($rs->wali->alamat->kelurahan), {{ $rs->wali->alamat->kelurahan }}, {{ $rs->wali->alamat->kecamatan }}@endif,
+                    {{ $rs->wali->alamat->kabupaten_kota }}, {{ $rs->wali->alamat->provinsi }} {{ $rs->wali->alamat->kode_pos }}
+                </div>
+                @endif
             </div>
             @endif
             @empty
             <div style="color:#94a3b8;text-align:center;padding:1rem">Belum ada data wali.</div>
             @endforelse
+        </div>
+    </div>
+</div>
+
+{{-- Berkas Persyaratan --}}
+<div class="card" style="margin-top:1.25rem">
+    <div class="card-header">
+        <span><i class="fas fa-folder-open" style="color:#1a4a8a;margin-right:.5rem"></i> Berkas Persyaratan</span>
+        @php $terverifikasiBerkas = collect($berkas)->where('status', 'Terverifikasi')->count(); @endphp
+        <span class="badge {{ $terverifikasiBerkas === count($berkas) ? 'badge-diterima' : 'badge-menunggu' }}">
+            {{ $terverifikasiBerkas }} / {{ count($berkas) }} Terverifikasi
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="grid-3" style="gap:.75rem">
+            @foreach($berkas as $kode => $d)
+            @php
+                $sc = match($d['status']) {
+                    'Terverifikasi' => 'diterima',
+                    'Ditolak'       => 'ditolak',
+                    'Menunggu Verifikasi' => 'menunggu',
+                    default => null,
+                };
+            @endphp
+            <div style="padding:.85rem;border-radius:10px;border:1.5px solid {{ $d['ada'] ? '#e2e8f0' : '#e2e8f0' }};background:#f8fafc">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.5rem">
+                    <div style="display:flex;align-items:center;gap:.5rem">
+                        <i class="fas {{ $d['icon'] }}" style="color:{{ $d['ada'] ? '#0f2744' : '#94a3b8' }}"></i>
+                        <strong style="font-size:.82rem;color:#0f2744">{{ $d['label'] }}</strong>
+                    </div>
+                    @if($sc)
+                    <span class="badge badge-{{ $sc }}" style="font-size:.65rem">{{ $d['status'] }}</span>
+                    @endif
+                </div>
+
+                @if($d['ada'])
+                    <div style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem">
+                        {{ $d['ekstensi'] }} · {{ $d['ukuran_kb'] }} KB
+                    </div>
+                    <a href="{{ $d['url'] }}" target="_blank" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-bottom:.5rem">
+                        <i class="fas fa-eye"></i> Lihat Berkas
+                    </a>
+
+                    @if($d['status'] === 'Terverifikasi' && $d['verifikator'])
+                        <div style="font-size:.7rem;color:#166534;text-align:center">Diverifikasi oleh {{ $d['verifikator'] }}</div>
+                    @else
+                    <form method="POST" action="{{ route('admin.dokumen.verifikasi', $d['record']->id_dokumen) }}">
+                        @csrf @method('PATCH')
+                        <select name="status_verifikasi" class="form-control" style="font-size:.75rem;padding:.35rem .5rem;margin-bottom:.4rem" onchange="this.form.querySelector('.btn-simpan-dokumen').style.display='block'">
+                            @foreach(['Menunggu Verifikasi','Terverifikasi','Ditolak'] as $s)
+                            <option value="{{ $s }}" {{ $d['status']==$s?'selected':'' }}>{{ $s }}</option>
+                            @endforeach
+                        </select>
+                        <input type="text" name="keterangan" value="{{ $d['keterangan'] }}" placeholder="Catatan (opsional)" class="form-control" style="font-size:.75rem;padding:.35rem .5rem;margin-bottom:.4rem">
+                        <button type="submit" class="btn btn-primary btn-sm btn-simpan-dokumen" style="width:100%;justify-content:center">
+                            <i class="fas fa-save"></i> Simpan
+                        </button>
+                    </form>
+                    @endif
+                @else
+                    <div style="font-size:.72rem;color:#94a3b8">Belum diunggah siswa</div>
+                @endif
+            </div>
+            @endforeach
         </div>
     </div>
 </div>

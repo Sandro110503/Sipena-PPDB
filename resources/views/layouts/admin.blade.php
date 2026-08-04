@@ -157,6 +157,7 @@
 
         /* ====== MISC ====== */
         .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;}
+        .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.1rem;}
         .flex-between{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.65rem;}
         .text-muted{color:var(--muted);font-size:.78rem;}
         .d-flex{display:flex;}
@@ -176,6 +177,7 @@
         @media(max-width:640px){
             .stat-grid{grid-template-columns:1fr 1fr;}
             .grid-2{grid-template-columns:1fr;}
+            .grid-3{grid-template-columns:1fr;}
             .content{padding:.9rem;}
             /* Paksa grid 2 kolom inline (style="grid-template-columns:1fr 1fr")
                ikut collapse jadi 1 kolom di layar kecil, karena inline style

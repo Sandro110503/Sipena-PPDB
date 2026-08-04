@@ -84,7 +84,6 @@
                     <th>Tgl. Daftar</th>
                     <th>Status</th>
                     <th>Pembayaran</th>
-                    <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -92,7 +91,7 @@
                 @php
                     $p1 = $s->pendaftaranJurusan->where('urutan_pilihan',1)->first();
                 @endphp
-                <tr>
+                <tr onclick="window.location='{{ route('admin.siswa.show', $s->id_siswa) }}'" style="cursor:pointer" class="row-clickable">
                     <td class="text-muted">{{ $siswa->firstItem() + $i }}</td>
                     <td><code style="font-size:.75rem;background:#f1f5f9;padding:.2rem .4rem;border-radius:4px">{{ $s->nomor_pendaftaran }}</code></td>
                     <td>
@@ -186,14 +185,6 @@
                             </span>
 
                         @endif
-                    </td>
-
-                    <td>
-                        <a href="{{ route('admin.siswa.show', $s->id_siswa) }}"
-                        class="btn btn-outline btn-sm btn-icon"
-                        title="Detail">
-                            <i class="fas fa-eye"></i>
-                        </a>
                     </td>
                 </tr>
                 @empty

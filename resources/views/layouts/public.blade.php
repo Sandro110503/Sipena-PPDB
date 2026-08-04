@@ -7,6 +7,7 @@
     <title>@yield('title', 'PPDB SMK YADIKA 8 JATIMULYA')</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         :root {
             --navy:#0f2744; --blue:#1a4a8a; --accent:#e8a020;

@@ -20,6 +20,9 @@
                     </td>
                 </tr>
                 <tr><td style="color:var(--muted);padding:.35rem 0">Keterangan</td><td>{{ $pembayaran->keterangan ?? '-' }}</td></tr>
+                @if($pembayaran->verifikator)
+                <tr><td style="color:var(--muted);padding:.35rem 0">Diverifikasi Oleh</td><td>{{ $pembayaran->verifikator->nama }}</td></tr>
+                @endif
             </table>
 
             @if($pembayaran->bukti_bayar)
@@ -28,6 +31,12 @@
                 <img src="{{ Storage::url($pembayaran->bukti_bayar) }}" alt="Bukti" style="max-width:100%;border-radius:8px;border:1px solid var(--border)" onerror="this.style.display='none'">
                 <a href="{{ Storage::url($pembayaran->bukti_bayar) }}" target="_blank" class="btn btn-outline btn-sm" style="margin-top:.5rem"><i class="fas fa-external-link-alt"></i> Buka</a>
             </div>
+            @endif
+
+            @if($pembayaran->status_pembayaran === 'Terverifikasi')
+            <a href="{{ route('admin.pembayaran.kwitansi', $pembayaran) }}" class="btn btn-primary btn-sm" style="margin-top:.75rem">
+                <i class="fas fa-file-pdf"></i> Unduh Kwitansi PDF
+            </a>
             @endif
         </div>
     </div>
