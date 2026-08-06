@@ -380,11 +380,17 @@
                         <i class="fas fa-id-card"></i>
                         <input type="text"
                                name="login"
+                               id="login"
                                value="{{ old('login') }}"
                                class="form-control"
                                placeholder="Nomor Pendaftaran atau NISN"
+                               inputmode="numeric"
+                               pattern="[0-9]*"
                                required>
                     </div>
+                    <small id="loginError" style="color:#dc2626;font-size:.75rem;display:none;margin-top:.4rem;">
+                        <i class="fas fa-exclamation-circle"></i> Hanya boleh berisi angka
+                    </small>
                 </div>
 
                 <div class="form-group">
@@ -435,6 +441,21 @@
     </div>
 
 </div>
+
+<script>
+document.getElementById('login').addEventListener('input', function (e) {
+    const errorEl = document.getElementById('loginError');
+    const original = e.target.value;
+    const cleaned = original.replace(/[^0-9]/g, '');
+
+    if (original !== cleaned) {
+        errorEl.style.display = 'block';
+        e.target.value = cleaned;
+    } else {
+        errorEl.style.display = 'none';
+    }
+});
+</script>
 
 </body>
 </html>

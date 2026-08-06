@@ -118,19 +118,19 @@
                     <div class="form-group">
                         <label class="form-label">Nama Depan <span class="req">*</span></label>
                         <input type="text" name="nama_depan" value="{{ old('nama_depan') }}"
-                            class="form-control @error('nama_depan') is-invalid @enderror"
+                            class="form-control input-nama-only @error('nama_depan') is-invalid @enderror"
                             placeholder="NAMA DEPAN" required>
                         @error('nama_depan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nama Tengah</label>
                         <input type="text" name="nama_tengah" value="{{ old('nama_tengah') }}"
-                            class="form-control" placeholder="NAMA TENGAH (OPSIONAL)">
+                            class="form-control input-nama-only" placeholder="NAMA TENGAH (OPSIONAL)">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nama Belakang</label>
                         <input type="text" name="nama_belakang" value="{{ old('nama_belakang') }}"
-                            class="form-control" placeholder="NAMA BELAKANG (OPSIONAL)">
+                            class="form-control input-nama-only" placeholder="NAMA BELAKANG (OPSIONAL)">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Jenis Kelamin <span class="req">*</span></label>
@@ -205,8 +205,11 @@
                     <select name="pilihan_1" class="form-control @error('pilihan_1') is-invalid @enderror" required>
                         <option value="">— Pilih Jurusan —</option>
                         @foreach($jurusan as $j)
-                        <option value="{{ $j->id_jurusan }}" {{ old('pilihan_1')==$j->id_jurusan?'selected':'' }}>
-                            [{{ $j->kode_jurusan }}] {{ $j->nama_jurusan }}
+                        @php $sisaOpt = max(0, $j->kapasitas - $j->diterima); @endphp
+                        <option value="{{ $j->id_jurusan }}"
+                            {{ old('pilihan_1')==$j->id_jurusan?'selected':'' }}
+                            {{ $sisaOpt <= 0 ? 'disabled' : '' }}>
+                            [{{ $j->kode_jurusan }}] {{ $j->nama_jurusan }} — {{ $sisaOpt <= 0 ? 'Kuota Penuh' : 'Sisa '.$sisaOpt.' kuota' }}
                         </option>
                         @endforeach
                     </select>
@@ -217,11 +220,22 @@
                 {{-- Info jurusan --}}
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin-top:1rem">
                     @foreach($jurusan as $j)
-                    @php $jc = match($j->kode_jurusan){'AKL'=>['bg'=>'#ede9fe','c'=>'#5b21b6'],'TJKT'=>['bg'=>'#dbeafe','c'=>'#1e40af'],'MPLB'=>['bg'=>'#fce7f3','c'=>'#9d174d'],default=>['bg'=>'#f1f5f9','c'=>'#475569']}; @endphp
+                    @php
+                        $jc = match($j->kode_jurusan){'AKL'=>['bg'=>'#ede9fe','c'=>'#5b21b6'],'TJKT'=>['bg'=>'#dbeafe','c'=>'#1e40af'],'MPLB'=>['bg'=>'#fce7f3','c'=>'#9d174d'],default=>['bg'=>'#f1f5f9','c'=>'#475569']};
+                        $sisa = max(0, $j->kapasitas - $j->diterima);
+                        $sisaColor = $sisa <= 0 ? '#dc2626' : ($sisa <= 5 ? '#d97706' : '#166534');
+                    @endphp
                     <div style="background:{{ $jc['bg'] }};border-radius:10px;padding:.75rem;border:1px solid {{ $jc['bg'] }}">
                         <div style="font-weight:800;font-size:.78rem;color:{{ $jc['c'] }};margin-bottom:.25rem">{{ $j->kode_jurusan }}</div>
                         <div style="font-size:.75rem;color:{{ $jc['c'] }};opacity:.85;line-height:1.4">{{ $j->nama_jurusan }}</div>
-                        <div style="font-size:.68rem;color:{{ $jc['c'] }};opacity:.65;margin-top:.25rem">Kuota: {{ $j->kapasitas }} siswa</div>
+                        <div style="font-size:.68rem;color:{{ $jc['c'] }};opacity:.65;margin-top:.25rem">Kapasitas: {{ $j->kapasitas }} siswa</div>
+                        <div style="font-size:.72rem;font-weight:700;margin-top:.15rem;color:{{ $sisaColor }}">
+                            @if($sisa <= 0)
+                                Kuota Penuh
+                            @else
+                                Sisa Kuota: {{ $sisa }}
+                            @endif
+                        </div>
                     </div>
                     @endforeach
                 </div>
@@ -357,14 +371,14 @@
                     <div class="form-group">
                         <label class="form-label">Nama Depan <span class="req">*</span></label>
                         <input type="text" name="wali_nama_depan" value="{{ old('wali_nama_depan') }}"
-                            class="form-control @error('wali_nama_depan') is-invalid @enderror"
+                            class="form-control input-nama-only @error('wali_nama_depan') is-invalid @enderror"
                             placeholder="NAMA DEPAN" required>
                         @error('wali_nama_depan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nama Belakang</label>
                         <input type="text" name="wali_nama_belakang" value="{{ old('wali_nama_belakang') }}"
-                            class="form-control" placeholder="NAMA BELAKANG">
+                            class="form-control input-nama-only" placeholder="NAMA BELAKANG">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nomor HP <span class="req">*</span></label>
@@ -438,7 +452,7 @@
                     <div class="petunjuk-title">Petunjuk Pengisian:</div>
                     <ol>
                         <li>Gunakan email yang <strong>masih aktif</strong>, karena akan digunakan untuk menerima notifikasi status pendaftaran.</li>
-                        <li>Password minimal 8 karakter, kombinasikan huruf dan angka agar lebih aman dan mudah diingat.</li>
+                        <li>Password minimal 8 karakter dan harus kombinasi <strong>huruf, angka, dan simbol</strong> (contoh: ! @ # $ % &amp;). Password yang hanya huruf saja atau angka saja tidak akan diterima.</li>
                         <li>Pastikan Konfirmasi Password diisi sama persis dengan Password.</li>
                         <li>Nomor HP diisi dengan nomor yang dapat dihubungi sebagai kontak tambahan.</li>
                         <li>Kolom bertanda <strong>*</strong> wajib diisi.</li>
@@ -461,15 +475,44 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password <span class="req">*</span></label>
-                        <input type="password" name="password"
-                            class="form-control @error('password') is-invalid @enderror"
-                            placeholder="Min. 8 karakter" required>
+                        <div style="position:relative">
+                            <input type="password" name="password" id="password"
+                                class="form-control @error('password') is-invalid @enderror"
+                                placeholder="Min. 8 karakter, kombinasi huruf, angka & simbol"
+                                style="padding-right:2.5rem" required>
+                            <button type="button" class="toggle-password" data-target="password"
+                                aria-label="Tampilkan password"
+                                style="position:absolute;top:50%;right:.75rem;transform:translateY(-50%);
+                                       background:none;border:none;padding:0;margin:0;cursor:pointer;
+                                       color:#94a3b8;font-size:.95rem;line-height:1;box-shadow:none;outline:none;
+                                       display:none">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                         @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <ul id="password-checklist" style="list-style:none;padding:0;margin:.5rem 0 0;font-size:.72rem">
+                            <li id="chk-length" style="display:none;color:#16a34a;margin-bottom:.2rem"><i class="fas fa-check-circle" style="font-size:.5rem;margin-right:.4rem"></i>Minimal 8 karakter</li>
+                            <li id="chk-letter" style="display:none;color:#16a34a;margin-bottom:.2rem"><i class="fas fa-check-circle" style="font-size:.5rem;margin-right:.4rem"></i>Mengandung huruf</li>
+                            <li id="chk-number" style="display:none;color:#16a34a;margin-bottom:.2rem"><i class="fas fa-check-circle" style="font-size:.5rem;margin-right:.4rem"></i>Mengandung angka</li>
+                            <li id="chk-symbol" style="display:none;color:#16a34a"><i class="fas fa-check-circle" style="font-size:.5rem;margin-right:.4rem"></i>Mengandung simbol (!@#$%&amp;* dsb)</li>
+                        </ul>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Konfirmasi Password <span class="req">*</span></label>
-                        <input type="password" name="password_confirmation"
-                            class="form-control" placeholder="Ulangi password" required>
+                        <div style="position:relative">
+                            <input type="password" name="password_confirmation" id="password_confirmation"
+                                class="form-control" placeholder="Ulangi password"
+                                style="padding-right:2.5rem" required>
+                            <button type="button" class="toggle-password" data-target="password_confirmation"
+                                aria-label="Tampilkan password"
+                                style="position:absolute;top:50%;right:.75rem;transform:translateY(-50%);
+                                       background:none;border:none;padding:0;margin:0;cursor:pointer;
+                                       color:#94a3b8;font-size:.95rem;line-height:1;box-shadow:none;outline:none;
+                                       display:none">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div id="chk-match" style="font-size:.72rem;margin-top:.4rem;color:#94a3b8"></div>
                     </div>
                 </div>
             </div>
@@ -498,8 +541,9 @@
      *    - input[type=password]   → dibiarkan (case-sensitive)
      * ================================================================ */
     document.getElementById('form-ppdb').addEventListener('submit', function () {
-        // Teks biasa → UPPERCASE
+        // Teks biasa → UPPERCASE (kecuali password yang sedang ditampilkan sbg type=text)
         this.querySelectorAll('input[type="text"], textarea').forEach(function (el) {
+            if (el.id === 'password' || el.id === 'password_confirmation') return;
             el.value = el.value.trim().toUpperCase();
         });
         // Email → lowercase
@@ -568,6 +612,108 @@
     // Init
     applyState(rOrtu.checked);
     updateHint(rOrtu.checked);
+
+    /* ================================================================
+     * 4. Validasi real-time Password: panjang, huruf, angka, simbol
+     * ================================================================ */
+    const pwInput   = document.getElementById('password');
+    const pwConfirm = document.getElementById('password_confirmation');
+    const chkLength = document.getElementById('chk-length');
+    const chkLetter = document.getElementById('chk-letter');
+    const chkNumber = document.getElementById('chk-number');
+    const chkSymbol = document.getElementById('chk-symbol');
+    const chkMatch  = document.getElementById('chk-match');
+
+    function setChk(el, ok) {
+        el.style.display = ok ? '' : 'none';
+    }
+
+    function validasiPassword() {
+        const val = pwInput.value;
+        const okLength = val.length >= 8;
+        const okLetter = /[A-Za-z]/.test(val);
+        const okNumber = /[0-9]/.test(val);
+        const okSymbol = /[^A-Za-z0-9]/.test(val);
+
+        setChk(chkLength, okLength);
+        setChk(chkLetter, okLetter);
+        setChk(chkNumber, okNumber);
+        setChk(chkSymbol, okSymbol);
+
+        const semuaValid = okLength && okLetter && okNumber && okSymbol;
+        pwInput.setCustomValidity(semuaValid || val === '' ? '' : 'Password harus kombinasi huruf, angka, dan simbol, minimal 8 karakter.');
+        return semuaValid;
+    }
+
+    function validasiKonfirmasi() {
+        if (!pwConfirm.value) {
+            chkMatch.textContent = '';
+            pwConfirm.setCustomValidity('');
+            return;
+        }
+        const cocok = pwConfirm.value === pwInput.value;
+        chkMatch.innerHTML = cocok
+            ? '<i class="fas fa-check-circle"></i> Password cocok'
+            : '<i class="fas fa-circle"></i> Password belum cocok';
+        chkMatch.style.color = cocok ? '#16a34a' : '#dc2626';
+        pwConfirm.setCustomValidity(cocok ? '' : 'Konfirmasi password tidak cocok.');
+    }
+
+    if (pwInput) {
+        pwInput.addEventListener('input', function () {
+            validasiPassword();
+            validasiKonfirmasi();
+        });
+    }
+    if (pwConfirm) {
+        pwConfirm.addEventListener('input', validasiKonfirmasi);
+    }
+
+    /* ================================================================
+     * 5. Toggle Lihat / Sembunyikan Password
+     *    Tombol hanya muncul jika input sudah terisi minimal 1 karakter
+     * ================================================================ */
+    document.querySelectorAll('.toggle-password').forEach(function (btn) {
+        const target = document.getElementById(btn.dataset.target);
+
+        function refreshVisibility() {
+            if (target.value.length > 0) {
+                btn.style.display = '';
+            } else {
+                btn.style.display = 'none';
+                // Sembunyikan kembali isi & reset ikon saat field dikosongkan
+                target.type = 'password';
+                btn.querySelector('i').className = 'fas fa-eye';
+                btn.setAttribute('aria-label', 'Tampilkan password');
+            }
+        }
+
+        target.addEventListener('input', refreshVisibility);
+        refreshVisibility(); // jaga-jaga jika ada old() value / autofill
+
+        btn.addEventListener('click', function () {
+            const icon = btn.querySelector('i');
+            const tampil = target.type === 'password';
+
+            target.type = tampil ? 'text' : 'password';
+            icon.className = tampil ? 'fas fa-eye-slash' : 'fas fa-eye';
+            btn.setAttribute('aria-label', tampil ? 'Sembunyikan password' : 'Tampilkan password');
+        });
+    });
+
+    /* ================================================================
+     * 6. Filter Nama: angka otomatis dibuang (simbol tetap diperbolehkan)
+     * ================================================================ */
+    document.querySelectorAll('.input-nama-only').forEach(function (el) {
+        el.addEventListener('input', function () {
+            const pos = this.selectionStart;
+            const before = this.value;
+            this.value = this.value.replace(/[0-9]/g, '');
+            const removed = before.length - this.value.length;
+            const newPos = Math.max(0, pos - removed);
+            this.setSelectionRange(newPos, newPos);
+        });
+    });
 
 })();
 </script>

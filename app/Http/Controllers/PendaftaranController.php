@@ -34,7 +34,10 @@ class PendaftaranController extends Controller
             return view('ppdb.ditutup', compact('periodeMendatang', 'periodeLewat'));
         }
 
-        $jurusan = Jurusan::all();
+        $jurusan = Jurusan::withCount(['siswaDiterima as diterima'])
+            ->orderBy('kode_jurusan')
+            ->get();
+
         return view('ppdb.index', compact('jurusan', 'periode'));
     }
 
@@ -74,9 +77,9 @@ class PendaftaranController extends Controller
 
         $rules = [
             // Data Pribadi
-            'nama_depan'            => 'required|string|max:100',
-            'nama_tengah'           => 'nullable|string|max:100',
-            'nama_belakang'         => 'nullable|string|max:100',
+            'nama_depan'            => ['required', 'string', 'max:100', 'regex:/^[^0-9]+$/u'],
+            'nama_tengah'           => ['nullable', 'string', 'max:100', 'regex:/^[^0-9]+$/u'],
+            'nama_belakang'         => ['nullable', 'string', 'max:100', 'regex:/^[^0-9]+$/u'],
             'jenis_kelamin'         => 'required|in:L,P',
             'tempat_lahir'          => 'required|string|max:100',
             'tanggal_lahir'         => 'required|date',
@@ -85,7 +88,14 @@ class PendaftaranController extends Controller
             'tahun_lulus'           => 'required|digits:4',
             'email'                 => 'required|email|unique:calon_siswa,email',
             'nomor_hp'              => 'required|string|max:15',
-            'password'              => 'required|min:8|confirmed',
+            'password'              => [
+                'required',
+                'confirmed',
+                \Illuminate\Validation\Rules\Password::min(8)
+                    ->letters()
+                    ->numbers()
+                    ->symbols(),
+            ],
             'foto'                  => 'nullable|image|max:2048',
 
             // Status tinggal
@@ -95,8 +105,8 @@ class PendaftaranController extends Controller
             'pilihan_1'             => 'required|exists:jurusan,id_jurusan',
 
             // Data Wali
-            'wali_nama_depan'       => 'required|string|max:100',
-            'wali_nama_belakang'    => 'nullable|string|max:100',
+            'wali_nama_depan'       => ['required', 'string', 'max:100', 'regex:/^[^0-9]+$/u'],
+            'wali_nama_belakang'    => ['nullable', 'string', 'max:100', 'regex:/^[^0-9]+$/u'],
             'wali_jenis_kelamin'    => 'required|in:L,P',
             'wali_hubungan'         => 'required|in:AY,IB,WL',
             'wali_nomor_hp'         => 'required|string|max:15',
@@ -123,8 +133,11 @@ class PendaftaranController extends Controller
             // ── Data Pribadi ──────────────────────────────────────────────────────
             'nama_depan.required'           => 'Nama depan wajib diisi.',
             'nama_depan.max'                => 'Nama depan maksimal 100 karakter.',
+            'nama_depan.regex'              => 'Nama depan tidak boleh mengandung angka.',
             'nama_tengah.max'               => 'Nama tengah maksimal 100 karakter.',
+            'nama_tengah.regex'             => 'Nama tengah tidak boleh mengandung angka.',
             'nama_belakang.max'             => 'Nama belakang maksimal 100 karakter.',
+            'nama_belakang.regex'           => 'Nama belakang tidak boleh mengandung angka.',
             'jenis_kelamin.required'        => 'Jenis kelamin wajib dipilih.',
             'jenis_kelamin.in'              => 'Jenis kelamin tidak valid.',
             'tempat_lahir.required'         => 'Tempat lahir wajib diisi.',
@@ -145,6 +158,9 @@ class PendaftaranController extends Controller
             'nomor_hp.max'                  => 'Nomor HP maksimal 15 karakter.',
             'password.required'             => 'Password wajib diisi.',
             'password.min'                  => 'Password minimal 8 karakter.',
+            'password.letters'              => 'Password harus mengandung minimal satu huruf.',
+            'password.numbers'              => 'Password harus mengandung minimal satu angka.',
+            'password.symbols'              => 'Password harus mengandung minimal satu simbol (contoh: ! @ # $ % &).',
             'password.confirmed'            => 'Konfirmasi password tidak cocok.',
             'foto.image'                    => 'File foto harus berupa gambar (jpg, jpeg, png, dll).',
             'foto.max'                      => 'Ukuran foto maksimal 2 MB.',
@@ -171,7 +187,9 @@ class PendaftaranController extends Controller
             // ── Data Orang Tua / Wali ─────────────────────────────────────────────
             'wali_nama_depan.required'      => 'Nama depan orang tua/wali wajib diisi.',
             'wali_nama_depan.max'           => 'Nama depan orang tua/wali maksimal 100 karakter.',
+            'wali_nama_depan.regex'         => 'Nama depan orang tua/wali tidak boleh mengandung angka.',
             'wali_nama_belakang.max'        => 'Nama belakang orang tua/wali maksimal 100 karakter.',
+            'wali_nama_belakang.regex'      => 'Nama belakang orang tua/wali tidak boleh mengandung angka.',
             'wali_jenis_kelamin.required'   => 'Jenis kelamin orang tua/wali wajib dipilih.',
             'wali_jenis_kelamin.in'         => 'Jenis kelamin orang tua/wali tidak valid.',
             'wali_hubungan.required'        => 'Hubungan dengan siswa wajib dipilih.',

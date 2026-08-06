@@ -3,6 +3,41 @@
 
 @push('styles')
 <style>
+/* ── Semua input teks tampil UPPERCASE secara visual ── */
+input[type="text"],
+input[type="date"],
+textarea {
+    text-transform: uppercase;
+}
+/* Email & password tetap tampil sesuai input asli (case-sensitive) */
+input[type="email"],
+input[type="password"] {
+    text-transform: none;
+}
+
+/* ── Kotak "Petunjuk Pengisian" (alamat) ─────────────────── */
+.petunjuk-box{
+    background:#eaf3ff;border:1px solid #bcd9ff;border-radius:12px;
+    padding:1rem 1.25rem;margin-bottom:1.25rem;font-size:.82rem;color:#1e3a5f;
+}
+.petunjuk-box .petunjuk-title{font-weight:800;color:#0f2744;margin-bottom:.5rem;font-size:.85rem;}
+.petunjuk-box ol{margin:0;padding-left:1.25rem;}
+.petunjuk-box ol li{margin-bottom:.35rem;line-height:1.55;}
+.petunjuk-box ol li:last-child{margin-bottom:0;}
+.petunjuk-box strong{color:#0f2744;}
+
+/* ── Kartu pilihan jenis tempat tinggal ──────────────────── */
+.tinggal-opt{
+    display:flex;align-items:flex-start;gap:.75rem;
+    padding:1rem 1.1rem;border:2px solid #e2e8f0;border-radius:12px;
+    cursor:pointer;background:#f8fafc;transition:.2s;
+}
+.tinggal-opt input{margin-top:.15rem;accent-color:#1a4a8a;flex-shrink:0;}
+.tinggal-opt .opt-title{font-weight:700;font-size:.875rem;color:#0f2744;}
+.tinggal-opt .opt-desc{font-size:.75rem;color:#475569;margin-top:.2rem;}
+.tinggal-opt.active{border-color:#1a4a8a;background:#eff6ff;}
+.tinggal-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;}
+
 /* ── Page Header ─────────────────────────────────────────── */
 .page-title{margin-bottom:1.1rem;}
 .page-title h1{font-size:1.2rem;font-weight:800;color:#0f2744;}
@@ -170,6 +205,7 @@
     .form-grid-2{grid-template-columns:1fr;}
     .tab-btn i + span{display:none;}
     .data-box .data-grid{grid-template-columns:1fr;}
+    .tinggal-grid{grid-template-columns:1fr;}
 }
 </style>
 @endpush
@@ -343,73 +379,171 @@
      TAB 2: ALAMAT
 ══════════════════════════════════════ --}}
 <div id="pane-alamat" class="{{ session('tab')==='alamat' ? '' : 'hidden' }}">
-    @php $alamat = $siswa->alamatCalonSiswa->first()?->alamat; @endphp
+    @php
+        $alamat  = $siswa->alamatCalonSiswa->first()?->alamat;
+        $alamatWali = $wali?->alamat;
+        $jenisTT = old('jenis_tempat_tinggal', $alamat?->jenis_tempat_tinggal ?? 'Rumah Orang Tua/Wali');
+        $bersamaOrtu = $jenisTT === 'Rumah Orang Tua/Wali';
+    @endphp
     <div class="card">
         <div class="card-header"><i class="fas fa-map-marker-alt"></i> Alamat Tempat Tinggal</div>
         <div class="card-body">
-            <form method="POST" action="{{ route('siswa.pengaturan.alamat') }}">
+
+            <div class="petunjuk-box">
+                <div class="petunjuk-title">Petunjuk Pengisian:</div>
+                <ol>
+                    <li>Pilih <strong>"Bersama Orang Tua / Wali"</strong> jika Anda tinggal serumah dengan orang tua/wali. Alamat tetap mengikuti data yang sudah tercatat sebelumnya.</li>
+                    <li>Pilih <strong>"Kost / Kontrak / Sewa"</strong> jika Anda tinggal terpisah dari orang tua/wali (perantauan), lalu lengkapi alamat tempat tinggal Anda saat ini.</li>
+                    <li>Isi alamat secara lengkap dan sesuai dengan kondisi sebenarnya, karena akan digunakan untuk keperluan surat-menyurat sekolah.</li>
+                    <li>Kolom bertanda <span class="req">*</span> wajib diisi sesuai opsi yang dipilih.</li>
+                </ol>
+            </div>
+
+            <form method="POST" action="{{ route('siswa.pengaturan.alamat') }}" id="form-alamat-siswa">
                 @csrf @method('PUT')
 
-                <div class="form-group">
-                    <label class="form-label">Jenis Tempat Tinggal <span class="req">*</span></label>
-                    <select name="jenis_tempat_tinggal"
-                            class="form-control @error('jenis_tempat_tinggal') is-invalid @enderror" required>
-                        <option value="">— Pilih —</option>
-                        @foreach(['Rumah Orang Tua/Wali','Sewa/Kost'] as $opt)
-                        <option value="{{ $opt }}"
-                            {{ old('jenis_tempat_tinggal',$alamat?->jenis_tempat_tinggal)===$opt?'selected':'' }}>
-                            {{ $opt }}
-                        </option>
-                        @endforeach
-                    </select>
-                    @error('jenis_tempat_tinggal')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="tinggal-grid">
+                    <label id="lbl-ortu" class="tinggal-opt {{ $bersamaOrtu ? 'active' : '' }}">
+                        <input type="radio" name="jenis_tempat_tinggal" id="r-ortu"
+                               value="Rumah Orang Tua/Wali" {{ $bersamaOrtu ? 'checked' : '' }}>
+                        <div>
+                            <div class="opt-title">Bersama Orang Tua / Wali</div>
+                            <div class="opt-desc">Saya tinggal di rumah orang tua atau wali</div>
+                        </div>
+                    </label>
+                    <label id="lbl-sendiri" class="tinggal-opt {{ !$bersamaOrtu ? 'active' : '' }}">
+                        <input type="radio" name="jenis_tempat_tinggal" id="r-sendiri"
+                               value="Sewa/Kost" {{ !$bersamaOrtu ? 'checked' : '' }}>
+                        <div>
+                            <div class="opt-title">Kost / Kontrak / Sewa</div>
+                            <div class="opt-desc">Saya tinggal di tempat lain (perantauan)</div>
+                        </div>
+                    </label>
+                </div>
+                @error('jenis_tempat_tinggal')<div class="invalid-feedback" style="margin-bottom:.75rem">{{ $message }}</div>@enderror
+
+                <div id="form-alamat-sendiri" style="{{ $bersamaOrtu ? 'display:none' : '' }}">
+                    <div style="font-size:.78rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem">
+                        Alamat Tempat Tinggal Siswa (Kost / Kontrak / Sewa)
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Nama Jalan / Alamat Lengkap <span class="req">*</span></label>
+                        <input type="text" name="nama_jalan"
+                               value="{{ old('nama_jalan',$alamat?->nama_jalan) }}"
+                               class="form-control @error('nama_jalan') is-invalid @enderror"
+                               placeholder="JL. CONTOH NO. 12 RT 01/RW 03" {{ !$bersamaOrtu ? 'required' : '' }}>
+                        @error('nama_jalan')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Kelurahan / Desa</label>
+                            <input type="text" name="kelurahan"
+                                   value="{{ old('kelurahan',$alamat?->kelurahan) }}"
+                                   class="form-control" placeholder="KELURAHAN / DESA">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Kecamatan</label>
+                            <input type="text" name="kecamatan"
+                                   value="{{ old('kecamatan',$alamat?->kecamatan) }}"
+                                   class="form-control" placeholder="KECAMATAN">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Kabupaten / Kota <span class="req">*</span></label>
+                            <input type="text" name="kabupaten_kota"
+                                   value="{{ old('kabupaten_kota',$alamat?->kabupaten_kota) }}"
+                                   class="form-control @error('kabupaten_kota') is-invalid @enderror"
+                                   placeholder="KABUPATEN / KOTA" {{ !$bersamaOrtu ? 'required' : '' }}>
+                            @error('kabupaten_kota')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Provinsi <span class="req">*</span></label>
+                            <input type="text" name="provinsi"
+                                   value="{{ old('provinsi',$alamat?->provinsi) }}"
+                                   class="form-control @error('provinsi') is-invalid @enderror"
+                                   placeholder="PROVINSI" {{ !$bersamaOrtu ? 'required' : '' }}>
+                            @error('provinsi')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Kode Pos</label>
+                            <input type="text" name="kode_pos"
+                                   value="{{ old('kode_pos',$alamat?->kode_pos) }}"
+                                   class="form-control" placeholder="KODE POS"
+                                   maxlength="10" inputmode="numeric">
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Nama Jalan / Alamat Lengkap <span class="req">*</span></label>
-                    <input type="text" name="nama_jalan"
-                           value="{{ old('nama_jalan',$alamat?->nama_jalan) }}"
-                           class="form-control @error('nama_jalan') is-invalid @enderror"
-                           placeholder="Contoh: Jl. Merdeka No. 12 RT 03/RW 05" required>
-                    @error('nama_jalan')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
+                {{-- Alamat Orang Tua / Wali — selalu tampil & bisa diperbarui,
+                     baik saat "Bersama Orang Tua/Wali" maupun "Kost/Kontrak/Sewa" --}}
+                <div id="form-alamat-ortu" style="margin-top:1.25rem;padding-top:1.1rem;border-top:1px solid #f1f5f9">
+                @if(!$wali)
+                    <div class="info-banner" style="background:#fef3c7;border-color:#fcd34d;color:#92400e">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>Data orang tua/wali Anda belum tercatat di sistem. Silakan hubungi panitia PPDB untuk melengkapi data ini sebelum menyimpan alamat.</div>
+                    </div>
+                @else
+                    <div id="banner-ortu-bersama" class="info-banner" style="background:#f0fdf4;border-color:#86efac;color:#166534;margin-bottom:1rem;{{ $bersamaOrtu ? '' : 'display:none' }}">
+                        <i class="fas fa-info-circle"></i>
+                        <div>Alamat Anda mengikuti alamat orang tua / wali di bawah. Jika orang tua/wali berpindah tempat tinggal (misalnya kini lebih dekat dengan sekolah), perbarui datanya di sini.</div>
+                    </div>
+                    <div id="banner-ortu-sendiri" class="info-banner" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;margin-bottom:1rem;{{ $bersamaOrtu ? 'display:none' : '' }}">
+                        <i class="fas fa-info-circle"></i>
+                        <div>Perbarui juga alamat orang tua / wali Anda di bawah apabila ada perubahan (misalnya orang tua/wali berpindah rumah).</div>
+                    </div>
 
-                <div class="form-grid-2">
-                    <div class="form-group">
-                        <label class="form-label">Kelurahan / Desa</label>
-                        <input type="text" name="kelurahan"
-                               value="{{ old('kelurahan',$alamat?->kelurahan) }}"
-                               class="form-control" placeholder="Kelurahan / desa">
+                    <div style="font-size:.78rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem">
+                        Alamat Orang Tua / Wali
                     </div>
+
                     <div class="form-group">
-                        <label class="form-label">Kecamatan</label>
-                        <input type="text" name="kecamatan"
-                               value="{{ old('kecamatan',$alamat?->kecamatan) }}"
-                               class="form-control" placeholder="Kecamatan">
+                        <label class="form-label">Nama Jalan / Alamat Lengkap <span class="req">*</span></label>
+                        <input type="text" name="wali_nama_jalan"
+                               value="{{ old('wali_nama_jalan',$alamatWali?->nama_jalan) }}"
+                               class="form-control @error('wali_nama_jalan') is-invalid @enderror"
+                               placeholder="JL. CONTOH NO. 12 RT 01/RW 03" required>
+                        @error('wali_nama_jalan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Kabupaten / Kota <span class="req">*</span></label>
-                        <input type="text" name="kabupaten_kota"
-                               value="{{ old('kabupaten_kota',$alamat?->kabupaten_kota) }}"
-                               class="form-control @error('kabupaten_kota') is-invalid @enderror"
-                               placeholder="Kab. / Kota" required>
-                        @error('kabupaten_kota')<div class="invalid-feedback">{{ $message }}</div>@enderror
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Kelurahan / Desa</label>
+                            <input type="text" name="wali_kelurahan"
+                                   value="{{ old('wali_kelurahan',$alamatWali?->kelurahan) }}"
+                                   class="form-control" placeholder="KELURAHAN / DESA">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Kecamatan</label>
+                            <input type="text" name="wali_kecamatan"
+                                   value="{{ old('wali_kecamatan',$alamatWali?->kecamatan) }}"
+                                   class="form-control" placeholder="KECAMATAN">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Kabupaten / Kota <span class="req">*</span></label>
+                            <input type="text" name="wali_kabupaten_kota"
+                                   value="{{ old('wali_kabupaten_kota',$alamatWali?->kabupaten_kota) }}"
+                                   class="form-control @error('wali_kabupaten_kota') is-invalid @enderror"
+                                   placeholder="KABUPATEN / KOTA" required>
+                            @error('wali_kabupaten_kota')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Provinsi <span class="req">*</span></label>
+                            <input type="text" name="wali_provinsi"
+                                   value="{{ old('wali_provinsi',$alamatWali?->provinsi) }}"
+                                   class="form-control @error('wali_provinsi') is-invalid @enderror"
+                                   placeholder="PROVINSI" required>
+                            @error('wali_provinsi')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Kode Pos</label>
+                            <input type="text" name="wali_kode_pos"
+                                   value="{{ old('wali_kode_pos',$alamatWali?->kode_pos) }}"
+                                   class="form-control" placeholder="KODE POS"
+                                   maxlength="10" inputmode="numeric">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Provinsi <span class="req">*</span></label>
-                        <input type="text" name="provinsi"
-                               value="{{ old('provinsi',$alamat?->provinsi) }}"
-                               class="form-control @error('provinsi') is-invalid @enderror"
-                               placeholder="Provinsi" required>
-                        @error('provinsi')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Kode Pos</label>
-                        <input type="text" name="kode_pos"
-                               value="{{ old('kode_pos',$alamat?->kode_pos) }}"
-                               class="form-control" placeholder="Kode pos"
-                               maxlength="10" inputmode="numeric">
-                    </div>
+                @endif
                 </div>
 
                 <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-top:.25rem">
@@ -661,6 +795,75 @@ function previewFoto(input) {
 (function() {
     const t = new URLSearchParams(location.search).get('tab');
     if (t && ['profil','alamat','password','notifikasi'].includes(t)) switchTab(t);
+})();
+
+/* ================================================================
+ * Toggle Alamat: Bersama Orang Tua/Wali vs Kost/Kontrak/Sewa
+ *   (konsisten dengan Formulir Pendaftaran)
+ * ================================================================ */
+(function () {
+    const rOrtu    = document.getElementById('r-ortu');
+    const rSendiri = document.getElementById('r-sendiri');
+    if (!rOrtu || !rSendiri) return;
+
+    const lblOrtu     = document.getElementById('lbl-ortu');
+    const lblSendiri  = document.getElementById('lbl-sendiri');
+    const formSendiri = document.getElementById('form-alamat-sendiri');
+    const bannerBersama = document.getElementById('banner-ortu-bersama');
+    const bannerSendiri = document.getElementById('banner-ortu-sendiri');
+    const fieldsSendiri = formSendiri.querySelectorAll('input');
+
+    function applyState(bersama) {
+        lblOrtu.classList.toggle('active', bersama);
+        lblSendiri.classList.toggle('active', !bersama);
+
+        formSendiri.style.display = bersama ? 'none' : '';
+
+        if (bannerBersama) bannerBersama.style.display = bersama ? '' : 'none';
+        if (bannerSendiri) bannerSendiri.style.display = bersama ? 'none' : '';
+
+        fieldsSendiri.forEach(function (el) {
+            if (['nama_jalan', 'kabupaten_kota', 'provinsi'].includes(el.name)) {
+                el.required = !bersama;
+            }
+        });
+        // Field alamat orang tua/wali selalu wajib diisi, terlepas dari pilihan radio
+    }
+
+    rOrtu.addEventListener('change',    function () { applyState(true);  });
+    rSendiri.addEventListener('change', function () { applyState(false); });
+
+    applyState(rOrtu.checked);
+})();
+
+/* ================================================================
+ * UPPERCASE — konsisten dengan Formulir Pendaftaran
+ *   - input[type=text] & textarea → huruf besar (live & saat submit)
+ *   - input[type=email]           → dibiarkan (lowercase konvensi)
+ *   - input[type=password]        → dibiarkan (case-sensitive)
+ * ================================================================ */
+(function () {
+    // 1. Feedback real-time saat mengetik
+    document.querySelectorAll('input[type="text"], textarea').forEach(function (el) {
+        el.addEventListener('input', function () {
+            const pos = this.selectionStart; // simpan posisi kursor
+            this.value = this.value.toUpperCase();
+            this.setSelectionRange(pos, pos); // kembalikan posisi kursor
+        });
+    });
+
+    // 2. Normalisasi value saat setiap form di halaman ini disubmit
+    document.querySelectorAll('form').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            this.querySelectorAll('input[type="text"], textarea').forEach(function (el) {
+                el.value = el.value.trim().toUpperCase();
+            });
+            this.querySelectorAll('input[type="email"]').forEach(function (el) {
+                el.value = el.value.trim().toLowerCase();
+            });
+            // password & file → dibiarkan
+        });
+    });
 })();
 </script>
 @endpush

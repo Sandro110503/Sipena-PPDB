@@ -155,7 +155,7 @@ class PortalSiswaController extends Controller
 
     public function pengaturan()
     {
-        $siswa = $this->siswa()->load(['alamatCalonSiswa.alamat']);
+        $siswa = $this->siswa()->load(['alamatCalonSiswa.alamat', 'relasiSiswa.wali.alamat']);
 
         $notifPrefs = session('notif_prefs_' . $siswa->id_siswa, [
             'notif_status'     => true,
@@ -164,7 +164,9 @@ class PortalSiswaController extends Controller
             'notif_pengumuman' => true,
         ]);
 
-        return view('siswa.pengaturan', compact('siswa', 'notifPrefs'));
+        $wali = $siswa->relasiSiswa->first()?->wali;
+
+        return view('siswa.pengaturan', compact('siswa', 'notifPrefs', 'wali'));
     }
 
     // ── Update Profil (Data Diri) ───────────────────────────────────────────────
@@ -225,37 +227,120 @@ class PortalSiswaController extends Controller
 
     public function updateAlamat(Request $request)
     {
-        $siswa = $this->siswa()->load(['alamatCalonSiswa.alamat']);
+        $siswa = $this->siswa()->load(['alamatCalonSiswa.alamat', 'relasiSiswa.wali.alamat']);
 
-        $request->validate([
+        $bersamaOrtu = $request->jenis_tempat_tinggal === 'Rumah Orang Tua/Wali';
+
+        // Alamat orang tua/wali selalu wajib diisi & diperbarui,
+        // baik siswa tinggal bersama ortu maupun kost/kontrak/sewa sendiri.
+        $rules = [
             'jenis_tempat_tinggal' => 'required|string|max:50',
-            'nama_jalan'           => 'required|string|max:255',
-            'kelurahan'            => 'nullable|string|max:100',
-            'kecamatan'            => 'nullable|string|max:100',
-            'kabupaten_kota'       => 'required|string|max:100',
-            'provinsi'             => 'required|string|max:100',
-            'kode_pos'             => 'nullable|string|max:10',
+            'wali_nama_jalan'      => 'required|string|max:255',
+            'wali_kelurahan'       => 'nullable|string|max:100',
+            'wali_kecamatan'       => 'nullable|string|max:100',
+            'wali_kabupaten_kota'  => 'required|string|max:100',
+            'wali_provinsi'        => 'required|string|max:100',
+            'wali_kode_pos'        => 'nullable|string|max:10',
+        ];
+
+        // Alamat siswa sendiri hanya wajib diisi jika memilih Kost/Kontrak/Sewa
+        if (! $bersamaOrtu) {
+            $rules += [
+                'nama_jalan'     => 'required|string|max:255',
+                'kelurahan'      => 'nullable|string|max:100',
+                'kecamatan'      => 'nullable|string|max:100',
+                'kabupaten_kota' => 'required|string|max:100',
+                'provinsi'       => 'required|string|max:100',
+                'kode_pos'       => 'nullable|string|max:10',
+            ];
+        }
+
+        $request->validate($rules, [], [
+            'wali_nama_jalan'     => 'nama jalan / alamat lengkap orang tua/wali',
+            'wali_kabupaten_kota' => 'kabupaten/kota orang tua/wali',
+            'wali_provinsi'       => 'provinsi orang tua/wali',
         ]);
 
-        $alamatSiswa = $siswa->alamatCalonSiswa->first();
+        $alamatSiswaRel = $siswa->alamatCalonSiswa->first();
+        $wali           = $siswa->relasiSiswa->first()?->wali;
 
-        if ($alamatSiswa && $alamatSiswa->alamat) {
-            $alamatSiswa->alamat->update($request->only([
-                'jenis_tempat_tinggal', 'nama_jalan', 'kelurahan',
-                'kecamatan', 'kabupaten_kota', 'provinsi', 'kode_pos',
-            ]));
+        if (! $wali) {
+            return back()
+                ->withErrors(['jenis_tempat_tinggal' => 'Data orang tua/wali tidak ditemukan. Silakan hubungi panitia PPDB.'])
+                ->withInput();
+        }
+
+        // ── 1. Update / buat alamat orang tua/wali (selalu diproses) ──────────
+        $dataAlamatOrtu = [
+            'jenis_tempat_tinggal' => 'Rumah Orang Tua/Wali',
+            'nama_jalan'           => $request->wali_nama_jalan,
+            'kelurahan'            => $request->wali_kelurahan,
+            'kecamatan'            => $request->wali_kecamatan,
+            'kabupaten_kota'       => $request->wali_kabupaten_kota,
+            'provinsi'             => $request->wali_provinsi,
+            'kode_pos'             => $request->wali_kode_pos,
+        ];
+
+        if ($wali->alamat) {
+            $wali->alamat->update($dataAlamatOrtu);
+            $alamatOrtu = $wali->alamat;
         } else {
-            $alamat = Alamat::create($request->only([
-                'jenis_tempat_tinggal', 'nama_jalan', 'kelurahan',
-                'kecamatan', 'kabupaten_kota', 'provinsi', 'kode_pos',
-            ]));
+            $alamatOrtu = Alamat::create($dataAlamatOrtu);
+            $wali->update(['id_alamat' => $alamatOrtu->id_alamat]);
+        }
 
-            AlamatCalonSiswa::create([
-                'id_siswa'          => $siswa->id_siswa,
-                'id_alamat'         => $alamat->id_alamat,
-                'kode_jenis_alamat' => 'RUMAH',
-                'tanggal_mulai'     => now(),
-            ]);
+        // ── 2. Alamat siswa ─────────────────────────────────────────────────
+        if ($bersamaOrtu) {
+            // Alamat siswa menunjuk ke baris alamat yang sama dengan ortu/wali
+            if ($alamatSiswaRel) {
+                $alamatSiswaRel->update([
+                    'id_alamat'         => $alamatOrtu->id_alamat,
+                    'kode_jenis_alamat' => 'RP',
+                ]);
+            } else {
+                AlamatCalonSiswa::create([
+                    'id_siswa'          => $siswa->id_siswa,
+                    'id_alamat'         => $alamatOrtu->id_alamat,
+                    'kode_jenis_alamat' => 'RP',
+                    'tanggal_mulai'     => now(),
+                ]);
+            }
+        } else {
+            $dataAlamatSiswa = [
+                'jenis_tempat_tinggal' => 'Sewa/Kost',
+                'nama_jalan'           => $request->nama_jalan,
+                'kelurahan'            => $request->kelurahan,
+                'kecamatan'            => $request->kecamatan,
+                'kabupaten_kota'       => $request->kabupaten_kota,
+                'provinsi'             => $request->provinsi,
+                'kode_pos'             => $request->kode_pos,
+            ];
+
+            // Jika alamat siswa saat ini masih menunjuk ke baris alamat yang sama
+            // dengan wali, jangan diupdate langsung (akan ikut mengubah alamat wali).
+            // Buat baris alamat baru khusus milik siswa.
+            $sedangSamaDenganWali = $alamatSiswaRel
+                && $wali->id_alamat === $alamatSiswaRel->id_alamat;
+
+            if ($alamatSiswaRel && $alamatSiswaRel->alamat && ! $sedangSamaDenganWali) {
+                $alamatSiswaRel->alamat->update($dataAlamatSiswa);
+            } else {
+                $alamatBaru = Alamat::create($dataAlamatSiswa);
+
+                if ($alamatSiswaRel) {
+                    $alamatSiswaRel->update([
+                        'id_alamat'         => $alamatBaru->id_alamat,
+                        'kode_jenis_alamat' => 'SW',
+                    ]);
+                } else {
+                    AlamatCalonSiswa::create([
+                        'id_siswa'          => $siswa->id_siswa,
+                        'id_alamat'         => $alamatBaru->id_alamat,
+                        'kode_jenis_alamat' => 'SW',
+                        'tanggal_mulai'     => now(),
+                    ]);
+                }
+            }
         }
 
         return redirect()->route('siswa.pengaturan')

@@ -23,10 +23,11 @@ class AuthSiswaController extends Controller
     {
         // 1. Validasi format input dasar
         $request->validate([
-            'login'    => 'required|string',
+            'login'    => ['required', 'string', 'regex:/^[0-9]+$/'],
             'password' => 'required|string',
         ], [
             'login.required'    => 'Nomor pendaftaran atau NISN wajib diisi.',
+            'login.regex'       => 'Nomor Pendaftaran/NISN hanya boleh berisi angka, tidak boleh mengandung simbol.',
             'password.required' => 'Password wajib diisi.',
         ]);
 

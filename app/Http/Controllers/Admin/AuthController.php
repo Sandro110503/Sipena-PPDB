@@ -40,8 +40,8 @@ class AuthController extends Controller
             'nip' => [
                 'required',
                 'string',
-                'min:5',
-                'max:30',
+                'min:16',
+                'max:18',
                 'regex:/^[0-9]+$/', // NIP hanya angka
             ],
             'password' => [
@@ -51,8 +51,8 @@ class AuthController extends Controller
             ],
         ], [
             'nip.required'  => 'NIP wajib diisi.',
-            'nip.min'       => 'NIP minimal 5 karakter.',
-            'nip.max'       => 'NIP maksimal 30 karakter.',
+            'nip.min'       => 'NIP minimal 16 karakter.',
+            'nip.max'       => 'NIP maksimal 18 karakter.',
             'nip.regex'     => 'NIP hanya boleh berisi angka.',
             'password.required' => 'Password wajib diisi.',
             'password.min'      => 'Password minimal 6 karakter.',
@@ -80,7 +80,7 @@ class AuthController extends Controller
             ActivityLog::catatLoginGagal($request->nip);
 
             throw ValidationException::withMessages([
-                'nip' => 'NIP tidak ditemukan dalam sistem.',
+                'nip' => 'NIP tidak terdaftar.',
             ]);
         }
 
